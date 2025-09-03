@@ -693,6 +693,15 @@ class MatchaCodeApp {
                 this.closeAuthModal();
             }
         });
+
+        // Add storage event listener for tab synchronization
+        window.addEventListener('storage', (e) => {
+            if (e.key === 'matchacode_data') {
+                console.log('Data changed in another tab, reloading...');
+                this.loadData();
+                this.updateUI();
+            }
+        });
     }
 }
 
