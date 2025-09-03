@@ -1,13 +1,80 @@
 // Supabase client for MatchaCode
-// This will replace the API service approach
-
-import { createClient } from '@supabase/supabase-js'
+// Browser-compatible version using fetch API
 
 // Supabase configuration
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'YOUR_SUPABASE_URL'
-const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'YOUR_SUPABASE_ANON_KEY'
+const supabaseUrl = 'https://snuczmeitmylhxdlabhb.supabase.co'
+const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNudWN6bWVpdG15bGh4ZGxhYmhiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTY5MTYzNTksImV4cCI6MjA3MjQ5MjM1OX0.pfgQ3Q-vWfp1ODB9YIxnygtA4MvnnZE0HXrlHgeBJRM'
 
-export const supabase = createClient(supabaseUrl, supabaseKey)
+// Create a simple Supabase client
+const supabase = {
+  supabaseUrl: supabaseUrl,
+  supabaseKey: supabaseKey,
+  
+  async from(table) {
+    return {
+      select: (columns = '*') => ({
+        eq: (column, value) => ({
+          single: async () => {
+            const response = await fetch(`${supabaseUrl}/rest/v1/${table}?${column}=eq.${value}&select=${columns}`, {
+              headers: {
+                'apikey': supabaseKey,
+                'Authorization': `Bearer ${supabaseKey}`,
+                'Content-Type': 'application/json'
+              }
+            })
+            const data = await response.json()
+            if (!response.ok) throw new Error(data.message || 'Request failed')
+            return { data: data[0], error: null }
+          }
+        }),
+        order: (column, options = {}) => ({
+          async then(callback) {
+            const response = await fetch(`${supabaseUrl}/rest/v1/${table}?select=${columns}&order=${column}.${options.ascending ? 'asc' : 'desc'}`, {
+              headers: {
+                'apikey': supabaseKey,
+                'Authorization': `Bearer ${supabaseKey}`,
+                'Content-Type': 'application/json'
+              }
+            })
+            const data = await response.json()
+            if (!response.ok) throw new Error(data.message || 'Request failed')
+            return callback({ data, error: null })
+          }
+        }),
+        async then(callback) {
+          const response = await fetch(`${supabaseUrl}/rest/v1/${table}?select=${columns}`, {
+            headers: {
+              'apikey': supabaseKey,
+              'Authorization': `Bearer ${supabaseKey}`,
+              'Content-Type': 'application/json'
+            }
+          })
+          const data = await response.json()
+          if (!response.ok) throw new Error(data.message || 'Request failed')
+          return callback({ data, error: null })
+        }
+      }),
+      update: (updates) => ({
+        eq: (column, value) => ({
+          async then(callback) {
+            const response = await fetch(`${supabaseUrl}/rest/v1/${table}?${column}=eq.${value}`, {
+              method: 'PATCH',
+              headers: {
+                'apikey': supabaseKey,
+                'Authorization': `Bearer ${supabaseKey}`,
+                'Content-Type': 'application/json'
+              },
+              body: JSON.stringify(updates)
+            })
+            const data = await response.json()
+            if (!response.ok) throw new Error(data.message || 'Request failed')
+            return callback({ data, error: null })
+          }
+        })
+      })
+    }
+  }
+}
 
 // MatchaCode API functions using Supabase
 export class MatchaCodeSupabaseAPI {
