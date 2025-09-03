@@ -77,7 +77,7 @@ const supabase = {
 }
 
 // MatchaCode API functions using Supabase
-export class MatchaCodeSupabaseAPI {
+class MatchaCodeSupabaseAPI {
     constructor() {
         this.supabase = supabase
     }
@@ -85,10 +85,12 @@ export class MatchaCodeSupabaseAPI {
     // Get all user data
     async getAllUsers() {
         try {
-            const { data, error } = await this.supabase
+            const result = await this.supabase
                 .from('users')
                 .select('*')
                 .order('created_at', { ascending: true })
+
+            const { data, error } = result
 
             if (error) {
                 throw error
@@ -119,11 +121,13 @@ export class MatchaCodeSupabaseAPI {
     async updateChallenge(userId, date, completed, timestamp) {
         try {
             // Get current user data
-            const { data: userData, error: fetchError } = await this.supabase
+            const fetchResult = await this.supabase
                 .from('users')
                 .select('daily_challenges, total_solved')
                 .eq('user_id', userId)
                 .single()
+
+            const { data: userData, error: fetchError } = fetchResult
 
             if (fetchError) {
                 throw fetchError
@@ -144,7 +148,7 @@ export class MatchaCodeSupabaseAPI {
             const newTotalSolved = completedDates.length
 
             // Update user in database
-            const { error: updateError } = await this.supabase
+            const updateResult = await this.supabase
                 .from('users')
                 .update({
                     daily_challenges: dailyChallenges,
@@ -152,6 +156,8 @@ export class MatchaCodeSupabaseAPI {
                     updated_at: new Date().toISOString()
                 })
                 .eq('user_id', userId)
+
+            const { error: updateError } = updateResult
 
             if (updateError) {
                 throw updateError
@@ -171,7 +177,7 @@ export class MatchaCodeSupabaseAPI {
     // Update user streak
     async updateStreak(userId, currentStreak, totalMatchaOwed) {
         try {
-            const { error } = await this.supabase
+            const result = await this.supabase
                 .from('users')
                 .update({
                     current_streak: currentStreak || 0,
@@ -179,6 +185,8 @@ export class MatchaCodeSupabaseAPI {
                     updated_at: new Date().toISOString()
                 })
                 .eq('user_id', userId)
+
+            const { error } = result
 
             if (error) {
                 throw error
@@ -198,11 +206,13 @@ export class MatchaCodeSupabaseAPI {
     async addActivity(userId, message, type, timestamp) {
         try {
             // Get current user data
-            const { data: userData, error: fetchError } = await this.supabase
+            const fetchResult = await this.supabase
                 .from('users')
                 .select('activity_history')
                 .eq('user_id', userId)
                 .single()
+
+            const { data: userData, error: fetchError } = fetchResult
 
             if (fetchError) {
                 throw fetchError
@@ -225,13 +235,15 @@ export class MatchaCodeSupabaseAPI {
             }
 
             // Update user in database
-            const { error: updateError } = await this.supabase
+            const updateResult = await this.supabase
                 .from('users')
                 .update({
                     activity_history: activityHistory,
                     updated_at: new Date().toISOString()
                 })
                 .eq('user_id', userId)
+
+            const { error: updateError } = updateResult
 
             if (updateError) {
                 throw updateError
