@@ -31,7 +31,6 @@
     "node": ">=14.0.0"
   },
   "dependencies": {
-    "@vercel/postgres": "^0.5.1",
-    "@vercel/node": "^3.0.0"
+    "@supabase/supabase-js": "^2.38.0"
   }
 }

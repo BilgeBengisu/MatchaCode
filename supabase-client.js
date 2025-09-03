@@ -1,0 +1,199 @@
+// Supabase client for MatchaCode
+// This will replace the API service approach
+
+import { createClient } from '@supabase/supabase-js'
+
+// Supabase configuration
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'YOUR_SUPABASE_URL'
+const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'YOUR_SUPABASE_ANON_KEY'
+
+export const supabase = createClient(supabaseUrl, supabaseKey)
+
+// MatchaCode API functions using Supabase
+export class MatchaCodeSupabaseAPI {
+    constructor() {
+        this.supabase = supabase
+    }
+
+    // Get all user data
+    async getAllUsers() {
+        try {
+            const { data, error } = await this.supabase
+                .from('users')
+                .select('*')
+                .order('created_at', { ascending: true })
+
+            if (error) {
+                throw error
+            }
+
+            // Transform data to match frontend format
+            const users = {}
+            data.forEach(row => {
+                users[row.user_id] = {
+                    name: row.name,
+                    currentStreak: row.current_streak,
+                    totalSolved: row.total_solved,
+                    totalMatchaOwed: row.total_matcha_owed,
+                    dailyChallenges: row.daily_challenges || {},
+                    activityHistory: row.activity_history || []
+                }
+            })
+
+            return { users }
+        } catch (error) {
+            console.error('Error fetching users:', error)
+            // Fallback to localStorage
+            return this.getFallbackData()
+        }
+    }
+
+    // Update user challenge
+    async updateChallenge(userId, date, completed, timestamp) {
+        try {
+            // Get current user data
+            const { data: userData, error: fetchError } = await this.supabase
+                .from('users')
+                .select('daily_challenges, total_solved')
+                .eq('user_id', userId)
+                .single()
+
+            if (fetchError) {
+                throw fetchError
+            }
+
+            const dailyChallenges = userData.daily_challenges || {}
+            
+            // Update the specific date
+            dailyChallenges[date] = {
+                completed: completed,
+                timestamp: timestamp || new Date().toISOString()
+            }
+
+            // Calculate new totals
+            const completedDates = Object.keys(dailyChallenges).filter(date => 
+                dailyChallenges[date]?.completed
+            )
+            const newTotalSolved = completedDates.length
+
+            // Update user in database
+            const { error: updateError } = await this.supabase
+                .from('users')
+                .update({
+                    daily_challenges: dailyChallenges,
+                    total_solved: newTotalSolved,
+                    updated_at: new Date().toISOString()
+                })
+                .eq('user_id', userId)
+
+            if (updateError) {
+                throw updateError
+            }
+
+            return { 
+                success: true, 
+                message: 'Challenge updated successfully',
+                totalSolved: newTotalSolved
+            }
+        } catch (error) {
+            console.error('Error updating challenge:', error)
+            throw error
+        }
+    }
+
+    // Update user streak
+    async updateStreak(userId, currentStreak, totalMatchaOwed) {
+        try {
+            const { error } = await this.supabase
+                .from('users')
+                .update({
+                    current_streak: currentStreak || 0,
+                    total_matcha_owed: totalMatchaOwed || 0,
+                    updated_at: new Date().toISOString()
+                })
+                .eq('user_id', userId)
+
+            if (error) {
+                throw error
+            }
+
+            return { 
+                success: true, 
+                message: 'Streak updated successfully'
+            }
+        } catch (error) {
+            console.error('Error updating streak:', error)
+            throw error
+        }
+    }
+
+    // Add activity
+    async addActivity(userId, message, type, timestamp) {
+        try {
+            // Get current user data
+            const { data: userData, error: fetchError } = await this.supabase
+                .from('users')
+                .select('activity_history')
+                .eq('user_id', userId)
+                .single()
+
+            if (fetchError) {
+                throw fetchError
+            }
+
+            const activityHistory = userData.activity_history || []
+            
+            // Add new activity
+            const newActivity = {
+                message: message,
+                type: type || 'general',
+                timestamp: timestamp || new Date().toISOString()
+            }
+
+            activityHistory.unshift(newActivity) // Add to beginning
+
+            // Keep only last 50 activities
+            if (activityHistory.length > 50) {
+                activityHistory.splice(50)
+            }
+
+            // Update user in database
+            const { error: updateError } = await this.supabase
+                .from('users')
+                .update({
+                    activity_history: activityHistory,
+                    updated_at: new Date().toISOString()
+                })
+                .eq('user_id', userId)
+
+            if (updateError) {
+                throw updateError
+            }
+
+            return { 
+                success: true, 
+                message: 'Activity added successfully'
+            }
+        } catch (error) {
+            console.error('Error adding activity:', error)
+            throw error
+        }
+    }
+
+    // Fallback to localStorage if Supabase fails
+    getFallbackData() {
+        const stored = localStorage.getItem('matchacode_data')
+        if (stored) {
+            return JSON.parse(stored)
+        }
+        return {
+            users: {
+                bilge: { name: 'Bilge', currentStreak: 0, totalSolved: 0, totalMatchaOwed: 0, dailyChallenges: {}, activityHistory: [] },
+                domenica: { name: 'Domenica', currentStreak: 0, totalSolved: 0, totalMatchaOwed: 0, dailyChallenges: {}, activityHistory: [] }
+            }
+        }
+    }
+}
+
+// Create global instance
+window.matchaSupabaseAPI = new MatchaCodeSupabaseAPI()
