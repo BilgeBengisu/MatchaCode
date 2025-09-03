@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MatchaCode - Daily LeetCode Challenge</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <!-- Main App Screen -->
+    <div id="appScreen" class="screen">
+        <main class="app-main">
+            <div class="container">
+                <div class="main-layout">
+                    <!-- Left Sidebar - Stats Overview -->
+                    <aside class="sidebar">
+                        <section class="stats-section">
+                            <h2 class="sidebar-title">
+                                <i class="fas fa-chart-bar"></i>
+                                Overview
+                            </h2>
+                            <div class="stats-grid">
+                                <div class="stat-card">
+                                    <div class="stat-icon">
+                                        <i class="fas fa-fire"></i>
+                                    </div>
+                                    <div class="stat-content">
+                                        <h3 id="totalStreak">0</h3>
+                                        <p>Combined Streak</p>
+                                    </div>
+                                </div>
+                                <div class="stat-card">
+                                    <div class="stat-icon">
+                                        <i class="fas fa-trophy"></i>
+                                    </div>
+                                    <div class="stat-content">
+                                        <h3 id="totalSolved">0</h3>
+                                        <p>Problems Solved</p>
+                                    </div>
+                                </div>
+                                <div class="stat-card">
+                                    <div class="stat-icon">
+                                        <i class="fas fa-coffee"></i>
+                                    </div>
+                                    <div class="stat-content">
+                                        <h3 id="totalMatchaOwed">0</h3>
+                                        <p>Matcha Owed</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </section>
+
+                        <!-- Recent Activity -->
+                        <section class="activity-section">
+                            <h2 class="sidebar-title">
+                                <i class="fas fa-history"></i>
+                                Recent Activity
+                            </h2>
+                            <div class="activity-card">
+                                <div class="activity-list" id="activityList">
+                                    <div class="empty-state">
+                                        <i class="fas fa-chart-line"></i>
+                                        <p>Start your LeetCode journey today!</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </section>
+                    </aside>
+
+                    <!-- Right Content - Main Content -->
+                    <main class="main-content">
+                        <!-- Daily Challenge -->
+                        <section class="challenge-section">
+                            <div class="challenge-card">
+                                <div class="challenge-header">
+                                    <h2>
+                                        <i class="fas fa-calendar-day"></i>
+                                        Daily Challenge
+                                    </h2>
+                                    <div class="date-display" id="todayDate">
+                                        <script>
+                                            document.addEventListener('DOMContentLoaded', function() {
+                                                const today = new Date();
+                                                const options = { 
+                                                    weekday: 'long', 
+                                                    year: 'numeric', 
+                                                    month: 'long', 
+                                                    day: 'numeric' 
+                                                };
+                                                const formattedDate = today.toLocaleDateString('en-US', options);
+                                                const dateElement = document.getElementById('todayDate');
+                                                if (dateElement) {
+                                                    dateElement.textContent = formattedDate;
+                                                }
+                                            });
+                                        </script>
+                                    </div>
+                                </div>
+                                
+                                <div class="challenge-users">
+                                    <div class="user-checkin-card" id="bilgeCheckinCard">
+                                        <div class="user-checkin-header">
+                                            <div class="user-avatar bilge">
+                                                <i class="fas fa-user"></i>
+                                            </div>
+                                            <div class="user-checkin-info">
+                                                <h4>Bilge</h4>
+                                                <p class="user-checkin-status" id="bilgeCheckinStatus">Not checked in today</p>
+                                            </div>
+                                        </div>
+                                        <div class="user-stats">
+                                            <div class="user-stat">
+                                                <span class="stat-number" id="bilgeStreak">0</span>
+                                                <span class="stat-label">Day Streak</span>
+                                            </div>
+                                            <div class="user-stat">
+                                                <span class="stat-number" id="bilgeSolved">0</span>
+                                                <span class="stat-label">Solved</span>
+                                            </div>
+                                            <div class="user-stat">
+                                                <span class="stat-number" id="bilgeMatcha">0</span>
+                                                <span class="stat-label">Matcha Owed</span>
+                                            </div>
+                                        </div>
+                                        <div class="user-checkin-actions">
+                                            <button class="btn-success" onclick="showAuthModal('bilge', 'complete')">
+                                                <i class="fas fa-check"></i>
+                                                Mark Complete
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    <div class="user-checkin-card" id="domenicaCheckinCard">
+                                        <div class="user-checkin-header">
+                                            <div class="user-avatar domenica">
+                                                <i class="fas fa-user"></i>
+                                            </div>
+                                            <div class="user-checkin-info">
+                                                <h4>Domenica</h4>
+                                                <p class="user-checkin-status" id="domenicaCheckinStatus">Not checked in today</p>
+                                            </div>
+                                        </div>
+                                        <div class="user-stats">
+                                            <div class="user-stat">
+                                                <span class="stat-number" id="domenicaStreak">0</span>
+                                                <span class="stat-label">Day Streak</span>
+                                            </div>
+                                            <div class="user-stat">
+                                                <span class="stat-number" id="domenicaSolved">0</span>
+                                                <span class="stat-label">Solved</span>
+                                            </div>
+                                            <div class="user-stat">
+                                                <span class="stat-number" id="domenicaMatcha">0</span>
+                                                <span class="stat-label">Matcha Owed</span>
+                                            </div>
+                                        </div>
+                                        <div class="user-checkin-actions">
+                                            <button class="btn-success" onclick="showAuthModal('domenica', 'complete')">
+                                                <i class="fas fa-check"></i>
+                                                Mark Complete
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </section>
+                    </main>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Success Modal -->
+    <div id="successModal" class="modal hidden">
+        <div class="modal-content">
+            <div class="modal-icon success">
+                <i class="fas fa-check-circle"></i>
+            </div>
+            <h3>Challenge Complete! 🎉</h3>
+            <p>Great job! Your streak continues.</p>
+            <button class="btn-primary" onclick="closeModal()">Awesome!</button>
+        </div>
+    </div>
+
+
+
+    <!-- Authentication Modal -->
+    <div id="authModal" class="modal hidden">
+        <div class="modal-content">
+            <div class="modal-icon">
+                <i class="fas fa-lock"></i>
+            </div>
+            <h3 id="authModalTitle">Authentication Required</h3>
+            <p id="authModalMessage">Enter the password to check in for this user.</p>
+            <form id="authForm">
+                <div class="input-group">
+                    <i class="fas fa-key"></i>
+                    <input type="password" id="authPassword" placeholder="Enter password" required>
+                </div>
+                <div class="auth-actions">
+                    <button type="button" class="btn-secondary" onclick="closeAuthModal()">Cancel</button>
+                    <button type="submit" class="btn-primary">
+                        <i class="fas fa-check"></i>
+                        Authenticate
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
