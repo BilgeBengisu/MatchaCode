@@ -50,23 +50,128 @@ class MatchaCodeApp {
 
     // UI Updates
     updateUI() {
+        console.log('updateUI called');
+        console.log('Updating stats...');
         this.updateStats();
+        console.log('Updating user cards...');
         this.updateUserCards();
+        console.log('Updating check-in cards...');
         this.updateCheckinCards();
+        console.log('Updating activity list...');
         this.updateActivityList();
+        console.log('Updating date...');
         this.updateDate();
+        console.log('updateUI completed');
     }
 
     updateStats() {
         const bilge = this.data.users.bilge;
         const domenica = this.data.users.domenica;
         
-        const totalStreak = Math.max(bilge.currentStreak, domenica.currentStreak);
+        // Calculate combined streak - only increases when both users complete on the same day
+        const combinedStreak = this.calculateCombinedStreak();
         const totalSolved = bilge.totalSolved + domenica.totalSolved;
 
-        document.getElementById('totalStreak').textContent = totalStreak;
-        document.getElementById('totalSolved').textContent = totalSolved;
-        document.getElementById('totalMatchaOwed').textContent = '0'; // Will be calculated automatically later
+        console.log('Stats update - Bilge:', { streak: bilge.currentStreak, solved: bilge.totalSolved });
+        console.log('Stats update - Domenica:', { streak: domenica.currentStreak, solved: domenica.totalSolved });
+        console.log('Stats update - Combined streak:', combinedStreak);
+        console.log('Stats update - Total solved:', totalSolved);
+
+        const totalStreakElement = document.getElementById('totalStreak');
+        const totalSolvedElement = document.getElementById('totalSolved');
+        const totalMatchaElement = document.getElementById('totalMatchaOwed');
+
+        if (totalStreakElement) {
+            totalStreakElement.textContent = combinedStreak;
+            console.log('Updated totalStreak to:', combinedStreak);
+        }
+        if (totalSolvedElement) {
+            totalSolvedElement.textContent = totalSolved;
+            console.log('Updated totalSolved to:', totalSolved);
+        }
+        if (totalMatchaElement) {
+            totalMatchaElement.textContent = '0';
+        }
+    }
+
+    calculateCombinedStreak() {
+        const bilge = this.data.users.bilge;
+        const domenica = this.data.users.domenica;
+        
+        // Get all dates where both users completed challenges
+        const bilgeDates = Object.keys(bilge.dailyChallenges).filter(date => 
+            bilge.dailyChallenges[date]?.completed
+        );
+        const domenicaDates = Object.keys(domenica.dailyChallenges).filter(date => 
+            domenica.dailyChallenges[date]?.completed
+        );
+        
+        // Find dates where both completed
+        const bothCompletedDates = bilgeDates.filter(date => domenicaDates.includes(date));
+        
+        // Sort dates in descending order (most recent first)
+        bothCompletedDates.sort((a, b) => new Date(b) - new Date(a));
+        
+        // Calculate consecutive days from today backwards
+        let streak = 0;
+        const today = new Date();
+        const todayKey = this.getTodayKey();
+        
+        for (let i = 0; i < bothCompletedDates.length; i++) {
+            const date = bothCompletedDates[i];
+            const expectedDate = new Date(today);
+            expectedDate.setDate(today.getDate() - i);
+            const expectedDateKey = expectedDate.toISOString().split('T')[0];
+            
+            if (date === expectedDateKey) {
+                streak++;
+            } else {
+                break; // Streak broken
+            }
+        }
+        
+        console.log('Combined streak calculation:', {
+            bilgeDates,
+            domenicaDates,
+            bothCompletedDates,
+            streak
+        });
+        
+        return streak;
+    }
+
+    calculateIndividualStreak(user) {
+        // Get all dates where user completed challenges
+        const completedDates = Object.keys(user.dailyChallenges).filter(date => 
+            user.dailyChallenges[date]?.completed
+        );
+        
+        // Sort dates in descending order (most recent first)
+        completedDates.sort((a, b) => new Date(b) - new Date(a));
+        
+        // Calculate consecutive days from today backwards
+        let streak = 0;
+        const today = new Date();
+        
+        for (let i = 0; i < completedDates.length; i++) {
+            const date = completedDates[i];
+            const expectedDate = new Date(today);
+            expectedDate.setDate(today.getDate() - i);
+            const expectedDateKey = expectedDate.toISOString().split('T')[0];
+            
+            if (date === expectedDateKey) {
+                streak++;
+            } else {
+                break; // Streak broken
+            }
+        }
+        
+        console.log('Individual streak calculation for', user.name, ':', {
+            completedDates,
+            streak
+        });
+        
+        return streak;
     }
 
     updateUserCards() {
@@ -98,17 +203,25 @@ class MatchaCodeApp {
         const domenica = this.data.users.domenica;
         const today = this.getTodayKey();
 
+        console.log('updateCheckinCards - Today:', today);
+        console.log('updateCheckinCards - Bilge completed:', bilge.dailyChallenges[today]?.completed);
+        console.log('updateCheckinCards - Domenica completed:', domenica.dailyChallenges[today]?.completed);
+
         // Update Bilge's check-in card styling based on completion status
         const bilgeCheckinCard = document.getElementById('bilgeCheckinCard');
         const bilgeCheckinStatus = document.getElementById('bilgeCheckinStatus');
         
+        console.log('Bilge elements found:', { card: !!bilgeCheckinCard, status: !!bilgeCheckinStatus });
+        
         if (bilgeCheckinCard && bilgeCheckinStatus) {
             if (bilge.dailyChallenges[today]?.completed) {
+                console.log('Updating Bilge card to completed state');
                 bilgeCheckinCard.style.borderColor = '#4CAF50';
                 bilgeCheckinCard.style.backgroundColor = '#f1f8e9';
                 bilgeCheckinStatus.textContent = 'Completed today\'s challenge! ✅';
                 bilgeCheckinStatus.className = 'user-checkin-status completed';
             } else {
+                console.log('Updating Bilge card to not completed state');
                 bilgeCheckinCard.style.borderColor = '#e1e8ed';
                 bilgeCheckinCard.style.backgroundColor = '#f8f9fa';
                 bilgeCheckinStatus.textContent = 'Not checked in today';
@@ -120,13 +233,17 @@ class MatchaCodeApp {
         const domenicaCheckinCard = document.getElementById('domenicaCheckinCard');
         const domenicaCheckinStatus = document.getElementById('domenicaCheckinStatus');
         
+        console.log('Domenica elements found:', { card: !!domenicaCheckinCard, status: !!domenicaCheckinStatus });
+        
         if (domenicaCheckinCard && domenicaCheckinStatus) {
             if (domenica.dailyChallenges[today]?.completed) {
+                console.log('Updating Domenica card to completed state');
                 domenicaCheckinCard.style.borderColor = '#4CAF50';
                 domenicaCheckinCard.style.backgroundColor = '#f1f8e9';
                 domenicaCheckinStatus.textContent = 'Completed today\'s challenge! ✅';
                 domenicaCheckinStatus.className = 'user-checkin-status completed';
             } else {
+                console.log('Updating Domenica card to not completed state');
                 domenicaCheckinCard.style.borderColor = '#e1e8ed';
                 domenicaCheckinCard.style.backgroundColor = '#f8f9fa';
                 domenicaCheckinStatus.textContent = 'Not checked in today';
@@ -279,15 +396,18 @@ class MatchaCodeApp {
 
         // Update stats
         user.totalSolved++;
-        user.currentStreak++;
+        user.currentStreak = this.calculateIndividualStreak(user);
         console.log('Updated stats - totalSolved:', user.totalSolved, 'currentStreak:', user.currentStreak);
 
         // Add to activity
         this.addActivity(user, 'Completed today\'s LeetCode challenge!', 'completed');
 
         // Save and update UI
+        console.log('Saving data...');
         this.saveData();
+        console.log('Data saved, updating UI...');
         this.updateUI();
+        console.log('UI updated, showing success modal...');
         this.showSuccessModal();
         console.log('markChallengeComplete completed successfully');
     }
@@ -318,7 +438,7 @@ class MatchaCodeApp {
 
     closeAuthModal() {
         document.getElementById('authModal').classList.add('hidden');
-        this.pendingAction = null;
+        // Don't clear pendingAction here - let executePendingAction handle it
     }
 
     // Event Listeners
