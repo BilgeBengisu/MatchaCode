@@ -10,6 +10,7 @@ class MatchaCodeApp {
                     name: 'Bilge',
                     currentStreak: 0,
                     totalSolved: 0,
+                    totalMatchaOwed: 0,
                     dailyChallenges: {},
                     activityHistory: []
                 },
@@ -17,6 +18,7 @@ class MatchaCodeApp {
                     name: 'Domenica',
                     currentStreak: 0,
                     totalSolved: 0,
+                    totalMatchaOwed: 0,
                     dailyChallenges: {},
                     activityHistory: []
                 }
@@ -41,6 +43,42 @@ class MatchaCodeApp {
             const parsedData = JSON.parse(savedData);
             // Merge with default structure to handle new users
             this.data.users = { ...this.data.users, ...parsedData.users };
+            
+            // Migrate old UTC-based date keys to local timezone format
+            this.migrateDateKeys();
+        }
+    }
+
+    migrateDateKeys() {
+        console.log('Checking for date key migration...');
+        let migrationNeeded = false;
+        
+        for (const userId in this.data.users) {
+            const user = this.data.users[userId];
+            const newDailyChallenges = {};
+            
+            for (const dateKey in user.dailyChallenges) {
+                // Check if this is an old UTC-based date key
+                if (dateKey.includes('T') || dateKey.length > 10) {
+                    console.log('Found old date key format:', dateKey);
+                    migrationNeeded = true;
+                    
+                    // Convert to local date
+                    const date = new Date(dateKey);
+                    const newDateKey = this.getDateKey(date);
+                    newDailyChallenges[newDateKey] = user.dailyChallenges[dateKey];
+                } else {
+                    // Keep existing local date keys
+                    newDailyChallenges[dateKey] = user.dailyChallenges[dateKey];
+                }
+            }
+            
+            user.dailyChallenges = newDailyChallenges;
+        }
+        
+        if (migrationNeeded) {
+            console.log('Date key migration completed, saving data...');
+            this.saveData();
         }
     }
 
@@ -59,6 +97,7 @@ class MatchaCodeApp {
                     name: 'Bilge',
                     currentStreak: 0,
                     totalSolved: 0,
+                    totalMatchaOwed: 0,
                     dailyChallenges: {},
                     activityHistory: []
                 },
@@ -66,6 +105,7 @@ class MatchaCodeApp {
                     name: 'Domenica',
                     currentStreak: 0,
                     totalSolved: 0,
+                    totalMatchaOwed: 0,
                     dailyChallenges: {},
                     activityHistory: []
                 }
@@ -94,6 +134,8 @@ class MatchaCodeApp {
         this.updateActivityList();
         console.log('Updating date...');
         this.updateDate();
+        console.log('Checking for missed days...');
+        this.checkForMissedDays();
         console.log('updateUI completed');
     }
 
@@ -104,11 +146,15 @@ class MatchaCodeApp {
         // Calculate combined streak - only increases when both users complete on the same day
         const combinedStreak = this.calculateCombinedStreak();
         const totalSolved = bilge.totalSolved + domenica.totalSolved;
+        
+        // Calculate total matcha owed
+        const totalMatchaOwed = (bilge.totalMatchaOwed || 0) + (domenica.totalMatchaOwed || 0);
 
-        console.log('Stats update - Bilge:', { streak: bilge.currentStreak, solved: bilge.totalSolved });
-        console.log('Stats update - Domenica:', { streak: domenica.currentStreak, solved: domenica.totalSolved });
+        console.log('Stats update - Bilge:', { streak: bilge.currentStreak, solved: bilge.totalSolved, matchaOwed: bilge.totalMatchaOwed || 0 });
+        console.log('Stats update - Domenica:', { streak: domenica.currentStreak, solved: domenica.totalSolved, matchaOwed: domenica.totalMatchaOwed || 0 });
         console.log('Stats update - Combined streak:', combinedStreak);
         console.log('Stats update - Total solved:', totalSolved);
+        console.log('Stats update - Total matcha owed:', totalMatchaOwed);
 
         const totalStreakElement = document.getElementById('totalStreak');
         const totalSolvedElement = document.getElementById('totalSolved');
@@ -123,7 +169,8 @@ class MatchaCodeApp {
             console.log('Updated totalSolved to:', totalSolved);
         }
         if (totalMatchaElement) {
-            totalMatchaElement.textContent = '0';
+            totalMatchaElement.textContent = totalMatchaOwed;
+            console.log('Updated totalMatchaOwed to:', totalMatchaOwed);
         }
     }
 
@@ -142,21 +189,24 @@ class MatchaCodeApp {
         // Find dates where both completed
         const bothCompletedDates = bilgeDates.filter(date => domenicaDates.includes(date));
         
+        if (bothCompletedDates.length === 0) {
+            return 0;
+        }
+        
         // Sort dates in descending order (most recent first)
         bothCompletedDates.sort((a, b) => new Date(b) - new Date(a));
         
-        // Calculate consecutive days from today backwards
-        let streak = 0;
-        const today = new Date();
-        const todayKey = this.getTodayKey();
+        // Calculate consecutive days from the most recent completion backwards
+        let streak = 1; // Start with 1 for the most recent completion
+        const mostRecentDate = new Date(bothCompletedDates[0]);
         
-        for (let i = 0; i < bothCompletedDates.length; i++) {
-            const date = bothCompletedDates[i];
-            const expectedDate = new Date(today);
-            expectedDate.setDate(today.getDate() - i);
-            const expectedDateKey = expectedDate.toISOString().split('T')[0];
+        for (let i = 1; i < bothCompletedDates.length; i++) {
+            const currentDate = new Date(bothCompletedDates[i]);
+            const expectedDate = new Date(mostRecentDate);
+            expectedDate.setDate(mostRecentDate.getDate() - i);
             
-            if (date === expectedDateKey) {
+            // Check if this date is exactly one day before the previous date
+            if (this.getDateKey(currentDate) === this.getDateKey(expectedDate)) {
                 streak++;
             } else {
                 break; // Streak broken
@@ -167,6 +217,7 @@ class MatchaCodeApp {
             bilgeDates,
             domenicaDates,
             bothCompletedDates,
+            mostRecentDate: this.getDateKey(mostRecentDate),
             streak
         });
         
@@ -179,20 +230,24 @@ class MatchaCodeApp {
             user.dailyChallenges[date]?.completed
         );
         
+        if (completedDates.length === 0) {
+            return 0;
+        }
+        
         // Sort dates in descending order (most recent first)
         completedDates.sort((a, b) => new Date(b) - new Date(a));
         
-        // Calculate consecutive days from today backwards
-        let streak = 0;
-        const today = new Date();
+        // Calculate consecutive days from the most recent completion backwards
+        let streak = 1; // Start with 1 for the most recent completion
+        const mostRecentDate = new Date(completedDates[0]);
         
-        for (let i = 0; i < completedDates.length; i++) {
-            const date = completedDates[i];
-            const expectedDate = new Date(today);
-            expectedDate.setDate(today.getDate() - i);
-            const expectedDateKey = expectedDate.toISOString().split('T')[0];
+        for (let i = 1; i < completedDates.length; i++) {
+            const currentDate = new Date(completedDates[i]);
+            const expectedDate = new Date(mostRecentDate);
+            expectedDate.setDate(mostRecentDate.getDate() - i);
             
-            if (date === expectedDateKey) {
+            // Check if this date is exactly one day before the previous date
+            if (this.getDateKey(currentDate) === this.getDateKey(expectedDate)) {
                 streak++;
             } else {
                 break; // Streak broken
@@ -201,10 +256,96 @@ class MatchaCodeApp {
         
         console.log('Individual streak calculation for', user.name, ':', {
             completedDates,
+            mostRecentDate: this.getDateKey(mostRecentDate),
             streak
         });
         
         return streak;
+    }
+
+    checkForMissedDays() {
+        console.log('Checking for missed days from September 3rd, 2025 to yesterday...');
+        
+        // Define the start date: September 3rd, 2025
+        const startDate = new Date('2025-09-03');
+        const today = new Date();
+        const yesterday = new Date(today);
+        yesterday.setDate(today.getDate() - 1);
+        
+        console.log('Start date:', startDate.toDateString());
+        console.log('Yesterday:', yesterday.toDateString());
+        
+        // Check each user for missed days from September 3rd to yesterday
+        ['bilge', 'domenica'].forEach(userId => {
+            const user = this.data.users[userId];
+            let missedDays = 0;
+            
+            // Check each day from September 3rd to yesterday
+            const checkDate = new Date(startDate);
+            
+            while (checkDate <= yesterday) {
+                const checkDateKey = this.getDateKey(checkDate);
+                
+                // If this day is not completed and not already marked as missed
+                if (!user.dailyChallenges[checkDateKey]?.completed && 
+                    !user.dailyChallenges[checkDateKey]?.missed) {
+                    
+                    console.log(`${user.name} missed day: ${checkDateKey}`);
+                    
+                    // Mark as missed
+                    user.dailyChallenges[checkDateKey] = {
+                        completed: false,
+                        missed: true,
+                        timestamp: new Date().toISOString()
+                    };
+                    
+                    missedDays++;
+                }
+                
+                // Move to next day
+                checkDate.setDate(checkDate.getDate() + 1);
+            }
+            
+            // Update matcha owed count
+            if (missedDays > 0) {
+                user.totalMatchaOwed = (user.totalMatchaOwed || 0) + missedDays;
+                console.log(`${user.name} missed ${missedDays} days - now owes ${user.totalMatchaOwed} matcha(s)`);
+                
+                // Add to activity history
+                this.addActivity(user, `Missed ${missedDays} LeetCode challenge(s) from Sep 3rd to yesterday - owes ${missedDays} matcha!`, 'missed');
+            }
+        });
+        
+        // Save data if any changes were made
+        this.saveData();
+    }
+
+    getImplementationDate() {
+        // Find the earliest completion date across both users
+        let earliestDate = null;
+        
+        ['bilge', 'domenica'].forEach(userId => {
+            const user = this.data.users[userId];
+            const completedDates = Object.keys(user.dailyChallenges).filter(date => 
+                user.dailyChallenges[date]?.completed
+            );
+            
+            if (completedDates.length > 0) {
+                completedDates.sort((a, b) => new Date(a) - new Date(b));
+                const userEarliestDate = new Date(completedDates[0]);
+                
+                if (!earliestDate || userEarliestDate < earliestDate) {
+                    earliestDate = userEarliestDate;
+                }
+            }
+        });
+        
+        // If no completions exist, use today as implementation date
+        if (!earliestDate) {
+            earliestDate = new Date();
+        }
+        
+        return earliestDate;
     }
 
     updateUserCards() {
@@ -212,23 +353,40 @@ class MatchaCodeApp {
         const domenica = this.data.users.domenica;
         const today = this.getTodayKey();
 
+        console.log('Updating user cards with streaks:', {
+            bilge: bilge.currentStreak,
+            domenica: domenica.currentStreak
+        });
+
         // Update Bilge's stats in the check-in card
         const bilgeStreak = document.getElementById('bilgeStreak');
         const bilgeSolved = document.getElementById('bilgeSolved');
         const bilgeMatcha = document.getElementById('bilgeMatcha');
         
-        if (bilgeStreak) bilgeStreak.textContent = bilge.currentStreak;
+        if (bilgeStreak) {
+            bilgeStreak.textContent = bilge.currentStreak;
+            console.log('Set Bilge streak element to:', bilge.currentStreak);
+        }
         if (bilgeSolved) bilgeSolved.textContent = bilge.totalSolved;
-        if (bilgeMatcha) bilgeMatcha.textContent = '0'; // Will be calculated automatically later
+        if (bilgeMatcha) {
+            bilgeMatcha.textContent = bilge.totalMatchaOwed || 0;
+            console.log('Set Bilge matcha owed to:', bilge.totalMatchaOwed || 0);
+        }
 
         // Update Domenica's stats in the check-in card
         const domenicaStreak = document.getElementById('domenicaStreak');
         const domenicaSolved = document.getElementById('domenicaSolved');
         const domenicaMatcha = document.getElementById('domenicaMatcha');
         
-        if (domenicaStreak) domenicaStreak.textContent = domenica.currentStreak;
+        if (domenicaStreak) {
+            domenicaStreak.textContent = domenica.currentStreak;
+            console.log('Set Domenica streak element to:', domenica.currentStreak);
+        }
         if (domenicaSolved) domenicaSolved.textContent = domenica.totalSolved;
-        if (domenicaMatcha) domenicaMatcha.textContent = '0'; // Will be calculated automatically later
+        if (domenicaMatcha) {
+            domenicaMatcha.textContent = domenica.totalMatchaOwed || 0;
+            console.log('Set Domenica matcha owed to:', domenica.totalMatchaOwed || 0);
+        }
     }
 
     updateCheckinCards() {
@@ -368,8 +526,17 @@ class MatchaCodeApp {
         const userData = this.data.users[user];
         const today = this.getTodayKey();
         
+        console.log('=== DEBUG INFO ===');
+        console.log('Current time:', new Date().toString());
+        console.log('Today key (local):', today);
+        console.log('User challenges:', userData.dailyChallenges);
+        console.log('Today challenge status:', userData.dailyChallenges[today]);
+        console.log('All challenge dates:', Object.keys(userData.dailyChallenges));
+        console.log('==================');
+        
         // Check if already completed
         if (userData.dailyChallenges[today]?.completed) {
+            console.log('User has already completed today\'s challenge');
             alert(`${userData.name} has already completed today's challenge!`);
             return;
         }
@@ -448,7 +615,19 @@ class MatchaCodeApp {
     // Helper Methods
     getTodayKey() {
         const today = new Date();
-        return today.toISOString().split('T')[0]; // YYYY-MM-DD format
+        // Use local timezone instead of UTC to ensure correct daily boundaries
+        const year = today.getFullYear();
+        const month = String(today.getMonth() + 1).padStart(2, '0');
+        const day = String(today.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`; // YYYY-MM-DD format in local timezone
+    }
+
+    getDateKey(date) {
+        // Helper function to get date key for any date object
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
     }
 
     addActivity(user, description, type) {
@@ -543,6 +722,313 @@ function resetAllData() {
     } else {
         console.error('MatchaCode app not found');
     }
+}
+
+// Debug function to clear all data (accessible from browser console)
+function clearAllData() {
+    if (confirm('Are you sure you want to clear ALL data? This cannot be undone!')) {
+        if (window.matchaApp) {
+            window.matchaApp.resetAllData();
+            console.log('✅ All data cleared!');
+        } else {
+            console.error('MatchaCode app not found');
+        }
+    }
+}
+
+// Debug function to inspect current data
+function inspectData() {
+    if (window.matchaApp) {
+        console.log('Current app data:', window.matchaApp.data);
+        console.log('LocalStorage data:', localStorage.getItem('matchacode_data'));
+    } else {
+        console.error('MatchaCode app not found');
+    }
+}
+
+// Function to add past challenge completions
+function addPastCompletions() {
+    if (!window.matchaApp) {
+        console.error('MatchaCode app not found');
+        return;
+    }
+
+    const today = new Date();
+    const yesterday = new Date(today);
+    yesterday.setDate(today.getDate() - 1);
+    const dayBefore = new Date(today);
+    dayBefore.setDate(today.getDate() - 2);
+
+    const todayKey = window.matchaApp.getDateKey(today);
+    const yesterdayKey = window.matchaApp.getDateKey(yesterday);
+    const dayBeforeKey = window.matchaApp.getDateKey(dayBefore);
+
+    console.log('Adding past completions for:');
+    console.log('- Today:', todayKey);
+    console.log('- Yesterday:', yesterdayKey);
+    console.log('- Day before:', dayBeforeKey);
+
+    // Add completions for both users for the past two days
+    const users = ['bilge', 'domenica'];
+    const pastDates = [yesterdayKey, dayBeforeKey];
+
+    pastDates.forEach(dateKey => {
+        users.forEach(userId => {
+            const user = window.matchaApp.data.users[userId];
+            if (!user.dailyChallenges[dateKey]?.completed) {
+                user.dailyChallenges[dateKey] = {
+                    completed: true,
+                    timestamp: new Date(dateKey + 'T12:00:00').toISOString() // Midday timestamp
+                };
+                user.totalSolved++;
+                console.log(`✅ Added completion for ${user.name} on ${dateKey}`);
+            } else {
+                console.log(`ℹ️ ${user.name} already completed on ${dateKey}`);
+            }
+        });
+    });
+
+    // Recalculate streaks
+    users.forEach(userId => {
+        const user = window.matchaApp.data.users[userId];
+        const oldStreak = user.currentStreak;
+        user.currentStreak = window.matchaApp.calculateIndividualStreak(user);
+        console.log(`📊 ${user.name} streak: ${oldStreak} → ${user.currentStreak}`);
+    });
+
+    // Save and update UI
+    window.matchaApp.saveData();
+    window.matchaApp.updateUI();
+    
+    console.log('🔄 UI updated - check the day streak displays');
+    
+    console.log('🎉 Past completions added successfully!');
+    console.log('Updated data:', window.matchaApp.data);
+}
+
+// More flexible function to add specific past completions
+function addSpecificCompletions(completions) {
+    if (!window.matchaApp) {
+        console.error('MatchaCode app not found');
+        return;
+    }
+
+    // Expected format: { date: 'YYYY-MM-DD', users: ['bilge', 'domenica'] }
+    // Example: addSpecificCompletions({ date: '2024-09-01', users: ['bilge'] })
+    
+    if (!completions.date || !completions.users) {
+        console.error('Invalid format. Use: { date: "YYYY-MM-DD", users: ["bilge", "domenica"] }');
+        return;
+    }
+
+    const dateKey = completions.date;
+    const users = completions.users;
+
+    console.log(`Adding completions for ${dateKey}:`, users);
+
+    users.forEach(userId => {
+        if (['bilge', 'domenica'].includes(userId)) {
+            const user = window.matchaApp.data.users[userId];
+            if (!user.dailyChallenges[dateKey]?.completed) {
+                user.dailyChallenges[dateKey] = {
+                    completed: true,
+                    timestamp: new Date(dateKey + 'T12:00:00').toISOString()
+                };
+                user.totalSolved++;
+                console.log(`✅ Added completion for ${user.name} on ${dateKey}`);
+            } else {
+                console.log(`ℹ️ ${user.name} already completed on ${dateKey}`);
+            }
+        } else {
+            console.error(`Invalid user: ${userId}. Use 'bilge' or 'domenica'`);
+        }
+    });
+
+    // Recalculate streaks for affected users
+    users.forEach(userId => {
+        if (['bilge', 'domenica'].includes(userId)) {
+            const user = window.matchaApp.data.users[userId];
+            const oldStreak = user.currentStreak;
+            user.currentStreak = window.matchaApp.calculateIndividualStreak(user);
+            console.log(`📊 ${user.name} streak: ${oldStreak} → ${user.currentStreak}`);
+        }
+    });
+
+    // Save and update UI
+    window.matchaApp.saveData();
+    window.matchaApp.updateUI();
+    
+    console.log('🔄 UI updated - check the day streak displays');
+    
+    console.log('🎉 Specific completions added successfully!');
+}
+
+// Function to manually check for missed days
+function checkMissedDays() {
+    if (window.matchaApp) {
+        window.matchaApp.checkForMissedDays();
+        console.log('✅ Missed days check completed!');
+    } else {
+        console.error('MatchaCode app not found');
+    }
+}
+
+// Function to reset matcha owed count for a user
+function resetMatchaOwed(userId) {
+    if (!window.matchaApp) {
+        console.error('MatchaCode app not found');
+        return;
+    }
+    
+    if (!['bilge', 'domenica'].includes(userId)) {
+        console.error('Invalid user. Use "bilge" or "domenica"');
+        return;
+    }
+    
+    const user = window.matchaApp.data.users[userId];
+    const oldCount = user.totalMatchaOwed || 0;
+    user.totalMatchaOwed = 0;
+    
+    // Add activity
+    window.matchaApp.addActivity(user, `Matcha owed count reset from ${oldCount} to 0`, 'reset');
+    
+    // Save and update
+    window.matchaApp.saveData();
+    window.matchaApp.updateUI();
+    
+    console.log(`✅ ${user.name}'s matcha owed count reset from ${oldCount} to 0`);
+}
+
+// Function to reset all matcha owed counts to 0
+function resetAllMatchaCounts() {
+    if (!window.matchaApp) {
+        console.error('MatchaCode app not found');
+        return;
+    }
+    
+    console.log('Resetting all matcha owed counts to 0...');
+    
+    // Reset all matcha owed counts to 0
+    ['bilge', 'domenica'].forEach(userId => {
+        const user = window.matchaApp.data.users[userId];
+        user.totalMatchaOwed = 0;
+        
+        // Clear all missed flags
+        Object.keys(user.dailyChallenges).forEach(date => {
+            if (user.dailyChallenges[date]?.missed) {
+                delete user.dailyChallenges[date].missed;
+            }
+        });
+    });
+    
+    // Save and update UI
+    window.matchaApp.saveData();
+    window.matchaApp.updateUI();
+    
+    console.log('✅ All matcha owed counts reset to 0!');
+}
+
+// Function to clean the activity list
+function cleanActivityList() {
+    if (!window.matchaApp) {
+        console.error('MatchaCode app not found');
+        return;
+    }
+    
+    console.log('Cleaning activity list...');
+    
+    // Clear all activity history for both users
+    ['bilge', 'domenica'].forEach(userId => {
+        const user = window.matchaApp.data.users[userId];
+        user.activityHistory = [];
+    });
+    
+    // Save and update UI
+    window.matchaApp.saveData();
+    window.matchaApp.updateUI();
+    
+    console.log('✅ Activity list cleaned!');
+}
+
+// Function to reset and recalculate all matcha owed counts
+function resetAndRecalculateMatcha() {
+    if (!window.matchaApp) {
+        console.error('MatchaCode app not found');
+        return;
+    }
+    
+    console.log('Resetting and recalculating matcha owed counts...');
+    
+    // Reset all matcha owed counts to 0
+    ['bilge', 'domenica'].forEach(userId => {
+        const user = window.matchaApp.data.users[userId];
+        user.totalMatchaOwed = 0;
+        
+        // Clear all missed flags
+        Object.keys(user.dailyChallenges).forEach(date => {
+            if (user.dailyChallenges[date]?.missed) {
+                delete user.dailyChallenges[date].missed;
+            }
+        });
+    });
+    
+    // Recalculate missed days
+    window.matchaApp.checkForMissedDays();
+    
+    // Update UI
+    window.matchaApp.updateUI();
+    
+    console.log('✅ Matcha owed counts reset and recalculated!');
+}
+
+// Function to manually mark yesterday as missed for a user (call this at the end of each day)
+function markYesterdayMissed(userId) {
+    if (!window.matchaApp) {
+        console.error('MatchaCode app not found');
+        return;
+    }
+    
+    if (!['bilge', 'domenica'].includes(userId)) {
+        console.error('Invalid user. Use "bilge" or "domenica"');
+        return;
+    }
+    
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    const yesterdayKey = window.matchaApp.getDateKey(yesterday);
+    
+    const user = window.matchaApp.data.users[userId];
+    
+    // Check if user completed yesterday
+    if (user.dailyChallenges[yesterdayKey]?.completed) {
+        console.log(`${user.name} completed yesterday's challenge - no matcha owed`);
+        return;
+    }
+    
+    // Check if already marked as missed
+    if (user.dailyChallenges[yesterdayKey]?.missed) {
+        console.log(`${user.name} already marked as missed for yesterday`);
+        return;
+    }
+    
+    // Mark as missed
+    user.dailyChallenges[yesterdayKey] = {
+        completed: false,
+        missed: true,
+        timestamp: new Date().toISOString()
+    };
+    
+    // Increase matcha owed count
+    user.totalMatchaOwed = (user.totalMatchaOwed || 0) + 1;
+    
+    // Add to activity history
+    window.matchaApp.addActivity(user, `Missed LeetCode challenge on ${yesterday.toLocaleDateString()} - owes 1 matcha!`, 'missed');
+    
+    // Save and update
+    window.matchaApp.saveData();
+    window.matchaApp.updateUI();
+    
+    console.log(`✅ ${user.name} marked as missed for ${yesterdayKey} - now owes ${user.totalMatchaOwed} matcha(s)`);
 }
 
 // About modal functions

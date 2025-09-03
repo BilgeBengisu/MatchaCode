@@ -588,7 +588,7 @@ body {
 }
 
 .user-checkin-card {
-    background: rgba(60, 40, 30, 0.6);
+    background: #F5F5DC;
     border-radius: 12px;
     padding: 20px;
     border: 2px solid rgba(76, 175, 80, 0.3);
@@ -991,5 +991,40 @@ body {
     
     .login-card {
         padding: 30px 20px;
+    }
+}
+
+/* Footer */
+.app-footer {
+    background: rgba(60, 40, 30, 0.8);
+    backdrop-filter: blur(10px);
+    border-top: 1px solid rgba(76, 175, 80, 0.3);
+    padding: 20px;
+    text-align: center;
+    margin-top: 40px;
+    box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.3);
+}
+
+.app-footer p {
+    color: #cccccc;
+    font-size: 0.9rem;
+    margin: 0;
+    font-weight: 500;
+}
+
+.app-footer p:hover {
+    color: #4CAF50;
+    transition: color 0.3s ease;
+}
+
+/* Responsive footer */
+@media (max-width: 768px) {
+    .app-footer {
+        padding: 15px;
+        margin-top: 30px;
+    }
+    
+    .app-footer p {
+        font-size: 0.8rem;
     }
 }
