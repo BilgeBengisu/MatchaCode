@@ -36,29 +36,36 @@ class MatchaCodeApp {
 
     // Data Management
     async loadData() {
+        console.log('🔄 Loading data...');
         try {
             // Try to load from Supabase first
+            console.log('📡 Attempting to load from Supabase...');
             const supabaseData = await window.matchaSupabaseAPI.getAllUsers();
+            console.log('📡 Supabase response:', supabaseData);
+            
             if (supabaseData && supabaseData.users) {
                 this.data = supabaseData;
-                console.log('Data loaded from Supabase:', this.data);
+                console.log('✅ Data loaded from Supabase:', this.data);
             } else {
                 throw new Error('No data from Supabase');
             }
         } catch (error) {
-            console.error('Error loading from Supabase, falling back to localStorage:', error);
+            console.error('❌ Error loading from Supabase, falling back to localStorage:', error);
             // Fallback to localStorage
             const savedData = localStorage.getItem('matchacode_data');
             if (savedData) {
                 const parsedData = JSON.parse(savedData);
                 // Merge with default structure to handle new users
                 this.data.users = { ...this.data.users, ...parsedData.users };
-                console.log('Data loaded from localStorage:', this.data);
+                console.log('📱 Data loaded from localStorage:', this.data);
+            } else {
+                console.log('🆕 Using default data structure');
             }
         }
         
         // Migrate old UTC-based date keys to local timezone format
         this.migrateDateKeys();
+        console.log('✅ Data loading completed');
     }
 
     migrateDateKeys() {
