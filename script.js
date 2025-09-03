@@ -27,12 +27,10 @@ class MatchaCodeApp {
         
         // Get password from environment configuration
         this.accessPassword = window.MATCHACODE_CONFIG?.accessPassword || 'matcha2024';
-        
-        this.init();
     }
 
-    init() {
-        this.loadData();
+    async init() {
+        await this.loadData();
         this.updateUI();
     }
 
@@ -1099,8 +1097,9 @@ function closeAboutModal() {
 }
 
 // Initialize the app when the page loads
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
     window.matchaApp = new MatchaCodeApp();
+    await window.matchaApp.init();
     
     // Setup event listeners after DOM is ready
     window.matchaApp.setupEventListeners();
