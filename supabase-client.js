@@ -85,16 +85,19 @@ class MatchaCodeSupabaseAPI {
     // Get all user data
     async getAllUsers() {
         try {
-            const result = await this.supabase
-                .from('users')
-                .select('*')
-                .order('created_at', { ascending: true })
+            const response = await fetch(`${this.supabase.supabaseUrl}/rest/v1/users?select=*&order=created_at.asc`, {
+                headers: {
+                    'apikey': this.supabase.supabaseKey,
+                    'Authorization': `Bearer ${this.supabase.supabaseKey}`,
+                    'Content-Type': 'application/json'
+                }
+            })
 
-            const { data, error } = result
-
-            if (error) {
-                throw error
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`)
             }
+
+            const data = await response.json()
 
             // Transform data to match frontend format
             const users = {}
@@ -121,16 +124,23 @@ class MatchaCodeSupabaseAPI {
     async updateChallenge(userId, date, completed, timestamp) {
         try {
             // Get current user data
-            const fetchResult = await this.supabase
-                .from('users')
-                .select('daily_challenges, total_solved')
-                .eq('user_id', userId)
-                .single()
+            const fetchResponse = await fetch(`${this.supabase.supabaseUrl}/rest/v1/users?user_id=eq.${userId}&select=daily_challenges,total_solved`, {
+                headers: {
+                    'apikey': this.supabase.supabaseKey,
+                    'Authorization': `Bearer ${this.supabase.supabaseKey}`,
+                    'Content-Type': 'application/json'
+                }
+            })
 
-            const { data: userData, error: fetchError } = fetchResult
+            if (!fetchResponse.ok) {
+                throw new Error(`HTTP error! status: ${fetchResponse.status}`)
+            }
 
-            if (fetchError) {
-                throw fetchError
+            const userDataArray = await fetchResponse.json()
+            const userData = userDataArray[0]
+
+            if (!userData) {
+                throw new Error('User not found')
             }
 
             const dailyChallenges = userData.daily_challenges || {}
@@ -148,19 +158,22 @@ class MatchaCodeSupabaseAPI {
             const newTotalSolved = completedDates.length
 
             // Update user in database
-            const updateResult = await this.supabase
-                .from('users')
-                .update({
+            const updateResponse = await fetch(`${this.supabase.supabaseUrl}/rest/v1/users?user_id=eq.${userId}`, {
+                method: 'PATCH',
+                headers: {
+                    'apikey': this.supabase.supabaseKey,
+                    'Authorization': `Bearer ${this.supabase.supabaseKey}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
                     daily_challenges: dailyChallenges,
                     total_solved: newTotalSolved,
                     updated_at: new Date().toISOString()
                 })
-                .eq('user_id', userId)
+            })
 
-            const { error: updateError } = updateResult
-
-            if (updateError) {
-                throw updateError
+            if (!updateResponse.ok) {
+                throw new Error(`HTTP error! status: ${updateResponse.status}`)
             }
 
             return { 
@@ -177,19 +190,22 @@ class MatchaCodeSupabaseAPI {
     // Update user streak
     async updateStreak(userId, currentStreak, totalMatchaOwed) {
         try {
-            const result = await this.supabase
-                .from('users')
-                .update({
+            const response = await fetch(`${this.supabase.supabaseUrl}/rest/v1/users?user_id=eq.${userId}`, {
+                method: 'PATCH',
+                headers: {
+                    'apikey': this.supabase.supabaseKey,
+                    'Authorization': `Bearer ${this.supabase.supabaseKey}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
                     current_streak: currentStreak || 0,
                     total_matcha_owed: totalMatchaOwed || 0,
                     updated_at: new Date().toISOString()
                 })
-                .eq('user_id', userId)
+            })
 
-            const { error } = result
-
-            if (error) {
-                throw error
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`)
             }
 
             return { 
@@ -206,16 +222,23 @@ class MatchaCodeSupabaseAPI {
     async addActivity(userId, message, type, timestamp) {
         try {
             // Get current user data
-            const fetchResult = await this.supabase
-                .from('users')
-                .select('activity_history')
-                .eq('user_id', userId)
-                .single()
+            const fetchResponse = await fetch(`${this.supabase.supabaseUrl}/rest/v1/users?user_id=eq.${userId}&select=activity_history`, {
+                headers: {
+                    'apikey': this.supabase.supabaseKey,
+                    'Authorization': `Bearer ${this.supabase.supabaseKey}`,
+                    'Content-Type': 'application/json'
+                }
+            })
 
-            const { data: userData, error: fetchError } = fetchResult
+            if (!fetchResponse.ok) {
+                throw new Error(`HTTP error! status: ${fetchResponse.status}`)
+            }
 
-            if (fetchError) {
-                throw fetchError
+            const userDataArray = await fetchResponse.json()
+            const userData = userDataArray[0]
+
+            if (!userData) {
+                throw new Error('User not found')
             }
 
             const activityHistory = userData.activity_history || []
@@ -235,18 +258,21 @@ class MatchaCodeSupabaseAPI {
             }
 
             // Update user in database
-            const updateResult = await this.supabase
-                .from('users')
-                .update({
+            const updateResponse = await fetch(`${this.supabase.supabaseUrl}/rest/v1/users?user_id=eq.${userId}`, {
+                method: 'PATCH',
+                headers: {
+                    'apikey': this.supabase.supabaseKey,
+                    'Authorization': `Bearer ${this.supabase.supabaseKey}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
                     activity_history: activityHistory,
                     updated_at: new Date().toISOString()
                 })
-                .eq('user_id', userId)
+            })
 
-            const { error: updateError } = updateResult
-
-            if (updateError) {
-                throw updateError
+            if (!updateResponse.ok) {
+                throw new Error(`HTTP error! status: ${updateResponse.status}`)
             }
 
             return { 
