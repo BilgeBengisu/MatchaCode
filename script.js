@@ -545,6 +545,23 @@ function resetAllData() {
     }
 }
 
+// About modal functions
+function showAboutModal() {
+    const modal = document.getElementById('aboutModal');
+    if (modal) {
+        modal.classList.remove('hidden');
+        console.log('About modal opened');
+    }
+}
+
+function closeAboutModal() {
+    const modal = document.getElementById('aboutModal');
+    if (modal) {
+        modal.classList.add('hidden');
+        console.log('About modal closed');
+    }
+}
+
 // Initialize the app when the page loads
 document.addEventListener('DOMContentLoaded', () => {
     window.matchaApp = new MatchaCodeApp();

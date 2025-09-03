@@ -19,7 +19,7 @@
                     <aside class="sidebar">
                         <!-- App Header -->
                         <header class="app-header">
-                            <div class="header-content">
+                            <div class="header-content" onclick="showAboutModal()">
                                 <div class="header-icon">
                                     <span class="matcha-emoji">🍵</span>
                                 </div>
@@ -218,6 +218,34 @@
                     </button>
                 </div>
             </form>
+        </div>
+    </div>
+
+    <!-- About Modal -->
+    <div id="aboutModal" class="modal hidden">
+        <div class="modal-content">
+            <button class="modal-close" onclick="closeAboutModal()">
+                <i class="fas fa-times"></i>
+            </button>
+            <div class="modal-icon">
+                <span class="matcha-emoji-large">🍵</span>
+            </div>
+            <h3>Welcome to MatchaCode!</h3>
+            <div class="about-content">
+                <p><strong>Purpose:</strong> A fun and motivating way for Bilge and Domenica to track their daily LeetCode challenges together!</p>
+                
+                <p><strong>How it works:</strong></p>
+                <ul>
+                    <li>📅 Complete your daily challenge</li>
+                    <li>✅ Mark complete with authentication</li>
+                    <li>🔥 Build individual & combined streaks</li>
+                    <li>📊 Track progress and stay motivated</li>
+                </ul>
+                
+                <p><strong>Matcha Challenge:</strong> Miss a day = owe a matcha! 🍵</p>
+                
+                <p><em>Keep coding and stay motivated together!</em> 💪</p>
+            </div>
         </div>
     </div>
 
