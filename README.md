@@ -19,15 +19,33 @@ A fun and motivating static website to track daily LeetCode challenges between f
 3. **Enter the password**: `matcha2024`
 4. **Start tracking** your daily LeetCode challenges!
 
-## 🔐 Authentication
+## 🔐 Environment Variables & Security
 
-The app uses a simple password system. The default password is `matcha2024` (hint: it's the drink that motivates us to code! 🍵).
+The app now uses environment variables to keep the password secure and out of source code.
 
-To change the password, edit the `accessPassword` variable in `script.js`:
+### Local Development
+1. Copy `env.example` to `.env` (optional for local dev)
+2. Set your password: `MATCHACODE_PASSWORD=your-secure-password`
+3. Run `npm run build:dev` to build with development settings
 
-```javascript
-this.accessPassword = 'your-new-password';
-```
+### Production Deployment
+Set the environment variable `MATCHACODE_PASSWORD` in your deployment platform:
+
+#### Netlify
+1. Go to Site Settings → Environment Variables
+2. Add `MATCHACODE_PASSWORD` with your secure password
+3. Deploy - the build process will automatically use your environment variable
+
+#### Vercel
+1. Go to Project Settings → Environment Variables
+2. Add `MATCHACODE_PASSWORD` with your secure password
+3. Deploy - the build process will automatically use your environment variable
+
+#### GitHub Pages
+GitHub Pages doesn't support environment variables. For GitHub Pages:
+1. Run `npm run build` locally with your password set
+2. Commit the generated `config.js` file
+3. Deploy to GitHub Pages
 
 ## 📱 How to Use
 

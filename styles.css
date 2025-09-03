@@ -7,7 +7,7 @@
 
 body {
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
     min-height: 100vh;
     color: #333;
     line-height: 1.6;
@@ -120,27 +120,9 @@ body {
     font-style: italic;
 }
 
-/* App Screen */
-.app-header {
-    background: rgba(255, 255, 255, 0.95);
-    backdrop-filter: blur(10px);
-    border-bottom: 1px solid rgba(255, 255, 255, 0.2);
-    padding: 20px 0;
-    position: sticky;
-    top: 0;
-    z-index: 100;
-}
+/* App Screen - Old header removed */
 
-.header-content {
-    max-width: 1200px;
-    margin: 0 auto;
-    padding: 0 20px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    flex-wrap: wrap;
-    gap: 20px;
-}
+/* Old header-content removed */
 
 .header-actions {
     display: flex;
@@ -222,6 +204,64 @@ body {
     padding: 0 20px;
 }
 
+/* App Header - Updated */
+.app-header {
+    position: fixed;
+    top: 20px;
+    left: 20px;
+    z-index: 100;
+    display: flex;
+    justify-content: flex-start;
+    padding: 0;
+    width: 300px; /* Match sidebar width */
+}
+
+.header-content {
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(10px);
+    padding: 12px 20px;
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+    max-width: 100%;
+}
+
+.header-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.matcha-emoji {
+    font-size: 2rem;
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
+    animation: float 3s ease-in-out infinite;
+}
+
+.app-title {
+    font-size: 1.8rem;
+    font-weight: 700;
+    background: linear-gradient(135deg, #4CAF50, #2E7D32);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin: 0;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* Floating animation for matcha emoji */
+@keyframes float {
+    0%, 100% {
+        transform: translateY(0px);
+    }
+    50% {
+        transform: translateY(-5px);
+    }
+}
+
 /* Main Layout */
 .main-layout {
     display: grid;
@@ -237,6 +277,7 @@ body {
     display: flex;
     flex-direction: column;
     gap: 25px;
+    padding-top: 80px; /* Space for fixed header */
 }
 
 .sidebar-title {
@@ -367,6 +408,15 @@ body {
 
 .user-avatar.domenica {
     background: linear-gradient(135deg, #f093fb, #f5576c);
+}
+
+/* Profile image styles */
+.profile-image {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    object-fit: cover;
+    object-position: center;
 }
 
 .user-info h3 {
@@ -781,6 +831,31 @@ body {
 
 /* Responsive Design */
 @media (max-width: 768px) {
+    .app-header {
+        position: fixed;
+        top: 10px;
+        left: 20px;
+        right: 20px;
+        width: auto;
+        z-index: 100;
+    }
+    
+    .header-content {
+        padding: 10px 16px;
+    }
+    
+    .matcha-emoji {
+        font-size: 1.8rem;
+    }
+    
+    .app-title {
+        font-size: 1.6rem;
+    }
+    
+    .sidebar {
+        padding-top: 70px; /* Less space needed on mobile */
+    }
+    
     .main-layout {
         grid-template-columns: 1fr;
         gap: 20px;

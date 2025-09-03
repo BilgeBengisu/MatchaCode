@@ -23,8 +23,8 @@ class MatchaCodeApp {
             }
         };
         
-        // Simple password - in a real app, this would be more secure
-        this.accessPassword = 'matcha2024';
+        // Get password from environment configuration
+        this.accessPassword = window.MATCHACODE_CONFIG?.accessPassword || 'matcha2024';
         
         this.init();
     }
@@ -46,6 +46,39 @@ class MatchaCodeApp {
 
     saveData() {
         localStorage.setItem('matchacode_data', JSON.stringify(this.data));
+    }
+
+    resetAllData() {
+        // Clear localStorage
+        localStorage.removeItem('matchacode_data');
+        
+        // Reset to default data structure
+        this.data = {
+            users: {
+                bilge: {
+                    name: 'Bilge',
+                    currentStreak: 0,
+                    totalSolved: 0,
+                    dailyChallenges: {},
+                    activityHistory: []
+                },
+                domenica: {
+                    name: 'Domenica',
+                    currentStreak: 0,
+                    totalSolved: 0,
+                    dailyChallenges: {},
+                    activityHistory: []
+                }
+            }
+        };
+        
+        // Save the reset data
+        this.saveData();
+        
+        // Update UI
+        this.updateUI();
+        
+        console.log('All data has been reset to default state');
     }
 
     // UI Updates
@@ -497,6 +530,16 @@ function closeAuthModal() {
 function updateDateManually() {
     if (window.matchaApp) {
         window.matchaApp.updateDate();
+    } else {
+        console.error('MatchaCode app not found');
+    }
+}
+
+// Reset all data function
+function resetAllData() {
+    if (window.matchaApp) {
+        window.matchaApp.resetAllData();
+        console.log('✅ All data has been reset! Ready to start fresh with your friend!');
     } else {
         console.error('MatchaCode app not found');
     }
