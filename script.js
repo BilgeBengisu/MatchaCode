@@ -184,10 +184,22 @@ class MatchaCodeApp {
         // Calculate total matcha owed
         const totalMatchaOwed = (bilge.totalMatchaOwed || 0) + (domenica.totalMatchaOwed || 0);
 
-        console.log('Stats update - Bilge:', { streak: bilge.currentStreak, solved: bilge.totalSolved, matchaOwed: bilge.totalMatchaOwed || 0 });
-        console.log('Stats update - Domenica:', { streak: domenica.currentStreak, solved: domenica.totalSolved, matchaOwed: domenica.totalMatchaOwed || 0 });
-        console.log('Stats update - Combined streak:', combinedStreak);
-        console.log('Stats update - Total solved:', totalSolved);
+        console.log('📊 Stats update - Bilge:', { 
+            streak: bilge.currentStreak, 
+            solved: bilge.totalSolved, 
+            matchaOwed: bilge.totalMatchaOwed || 0,
+            challenges: Object.keys(bilge.dailyChallenges).length,
+            completedDates: Object.keys(bilge.dailyChallenges).filter(date => bilge.dailyChallenges[date]?.completed)
+        });
+        console.log('📊 Stats update - Domenica:', { 
+            streak: domenica.currentStreak, 
+            solved: domenica.totalSolved, 
+            matchaOwed: domenica.totalMatchaOwed || 0,
+            challenges: Object.keys(domenica.dailyChallenges).length,
+            completedDates: Object.keys(domenica.dailyChallenges).filter(date => domenica.dailyChallenges[date]?.completed)
+        });
+        console.log('📊 Stats update - Combined streak:', combinedStreak);
+        console.log('📊 Stats update - Total solved:', totalSolved);
         console.log('Stats update - Total matcha owed:', totalMatchaOwed);
 
         const totalStreakElement = document.getElementById('totalStreak');
@@ -271,14 +283,32 @@ class MatchaCodeApp {
         // Sort dates in descending order (most recent first)
         completedDates.sort((a, b) => new Date(b) - new Date(a));
         
+        const today = this.getTodayKey();
+        const yesterday = this.getDateKey(new Date(Date.now() - 24 * 60 * 60 * 1000));
+        
+        // Check if the most recent completion is today or yesterday
+        const mostRecentDate = completedDates[0];
+        if (mostRecentDate !== today && mostRecentDate !== yesterday) {
+            // Most recent completion is not today or yesterday, streak is 0
+            console.log('Individual streak calculation for', user.name, ':', {
+                completedDates,
+                mostRecentDate,
+                today,
+                yesterday,
+                streak: 0,
+                reason: 'Most recent completion is not today or yesterday'
+            });
+            return 0;
+        }
+        
         // Calculate consecutive days from the most recent completion backwards
         let streak = 1; // Start with 1 for the most recent completion
-        const mostRecentDate = new Date(completedDates[0]);
+        const mostRecentDateObj = new Date(mostRecentDate);
         
         for (let i = 1; i < completedDates.length; i++) {
             const currentDate = new Date(completedDates[i]);
-            const expectedDate = new Date(mostRecentDate);
-            expectedDate.setDate(mostRecentDate.getDate() - i);
+            const expectedDate = new Date(mostRecentDateObj);
+            expectedDate.setDate(mostRecentDateObj.getDate() - i);
             
             // Check if this date is exactly one day before the previous date
             if (this.getDateKey(currentDate) === this.getDateKey(expectedDate)) {
@@ -290,7 +320,9 @@ class MatchaCodeApp {
         
         console.log('Individual streak calculation for', user.name, ':', {
             completedDates,
-            mostRecentDate: this.getDateKey(mostRecentDate),
+            mostRecentDate,
+            today,
+            yesterday,
             streak
         });
         
