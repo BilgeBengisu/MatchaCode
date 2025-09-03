@@ -29,5 +29,8 @@
   "homepage": "https://yourusername.github.io/matchacode",
   "engines": {
     "node": ">=14.0.0"
+  },
+  "dependencies": {
+    "@vercel/postgres": "^0.5.1"
   }
 }
