@@ -37,16 +37,30 @@ class MatchaCodeApp {
     }
 
     // Data Management
-    loadData() {
-        const savedData = localStorage.getItem('matchacode_data');
-        if (savedData) {
-            const parsedData = JSON.parse(savedData);
-            // Merge with default structure to handle new users
-            this.data.users = { ...this.data.users, ...parsedData.users };
-            
-            // Migrate old UTC-based date keys to local timezone format
-            this.migrateDateKeys();
+    async loadData() {
+        try {
+            // Try to load from Supabase first
+            const supabaseData = await window.matchaSupabaseAPI.getAllUsers();
+            if (supabaseData && supabaseData.users) {
+                this.data = supabaseData;
+                console.log('Data loaded from Supabase:', this.data);
+            } else {
+                throw new Error('No data from Supabase');
+            }
+        } catch (error) {
+            console.error('Error loading from Supabase, falling back to localStorage:', error);
+            // Fallback to localStorage
+            const savedData = localStorage.getItem('matchacode_data');
+            if (savedData) {
+                const parsedData = JSON.parse(savedData);
+                // Merge with default structure to handle new users
+                this.data.users = { ...this.data.users, ...parsedData.users };
+                console.log('Data loaded from localStorage:', this.data);
+            }
         }
+        
+        // Migrate old UTC-based date keys to local timezone format
+        this.migrateDateKeys();
     }
 
     migrateDateKeys() {
@@ -82,8 +96,23 @@ class MatchaCodeApp {
         }
     }
 
-    saveData() {
-        localStorage.setItem('matchacode_data', JSON.stringify(this.data));
+    async saveData() {
+        try {
+            // Save to Supabase
+            for (const userId in this.data.users) {
+                const user = this.data.users[userId];
+                await window.matchaSupabaseAPI.updateStreak(
+                    userId, 
+                    user.currentStreak, 
+                    user.totalMatchaOwed
+                );
+            }
+            console.log('Data saved to Supabase');
+        } catch (error) {
+            console.error('Error saving to Supabase, falling back to localStorage:', error);
+            // Fallback to localStorage
+            localStorage.setItem('matchacode_data', JSON.stringify(this.data));
+        }
     }
 
     resetAllData() {
@@ -566,14 +595,18 @@ class MatchaCodeApp {
         console.log('Executing action:', actionType, 'for user:', user);
         
         if (actionType === 'complete') {
-            console.log('Calling markChallengeComplete for:', user);
-            this.markChallengeComplete(user);
+                    console.log('Calling markChallengeComplete for:', user);
+        this.markChallengeComplete(user).then(() => {
+            console.log('Challenge completion saved successfully');
+        }).catch(error => {
+            console.error('Error completing challenge:', error);
+        });
         }
         
         this.pendingAction = null;
     }
 
-    markChallengeComplete(userId) {
+    async markChallengeComplete(userId) {
         console.log('markChallengeComplete called for user:', userId);
         const user = this.data.users[userId];
         const today = this.getTodayKey();
@@ -602,9 +635,17 @@ class MatchaCodeApp {
         // Add to activity
         this.addActivity(user, 'Completed today\'s LeetCode challenge!', 'completed');
 
-        // Save and update UI
-        console.log('Saving data...');
-        this.saveData();
+        // Save to Supabase
+        try {
+            await window.matchaSupabaseAPI.updateChallenge(userId, today, true, new Date().toISOString());
+            await window.matchaSupabaseAPI.updateStreak(userId, user.currentStreak, user.totalMatchaOwed);
+            await window.matchaSupabaseAPI.addActivity(userId, 'Completed today\'s LeetCode challenge!', 'completed');
+            console.log('Data saved to Supabase');
+        } catch (error) {
+            console.error('Error saving to Supabase:', error);
+            // Fallback to localStorage
+            this.saveData();
+        }
         console.log('Data saved, updating UI...');
         this.updateUI();
         console.log('UI updated, showing success modal...');
