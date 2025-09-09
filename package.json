@@ -4,12 +4,9 @@
   "description": "Daily LeetCode Challenge Tracker with Matcha Theme",
   "main": "index.html",
   "scripts": {
-    "start": "python -m http.server 8000",
-    "dev": "python -m http.server 8000",
-    "build": "node build.js production",
-    "build:dev": "node build.js development",
-    "build:staging": "node build.js staging",
-    "deploy": "echo 'Deploy to your preferred platform'"
+    "start": "python3 -m http.server 8000",
+    "dev": "python3 -m http.server 8000",
+    "deploy": "vercel --prod"
   },
   "keywords": [
     "leetcode",
@@ -31,7 +28,6 @@
     "node": ">=14.0.0"
   },
   "dependencies": {
-    "@supabase/supabase-js": "^2.38.0",
     "vercel": "^47.0.2"
   }
 }

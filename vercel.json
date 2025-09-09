@@ -3,13 +3,10 @@
   "builds": [
     {
       "src": "package.json",
-      "use": "@vercel/static-build",
-      "config": {
-        "distDir": "."
-      }
+      "use": "@vercel/static-build"
     }
   ],
-  "buildCommand": "npm run build",
+  "buildCommand": "",
   "headers": [
     {
       "source": "/(.*)",

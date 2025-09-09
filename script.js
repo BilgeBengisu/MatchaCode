@@ -26,7 +26,7 @@ class MatchaCodeApp {
         };
         
         // Get password from environment configuration
-        this.accessPassword = window.MATCHACODE_CONFIG?.accessPassword || 'matcha2024';
+        this.accessPassword = window.MATCHACODE_CONFIG?.accessPassword;
     }
 
     async init() {
@@ -36,16 +36,12 @@ class MatchaCodeApp {
 
     // Data Management
     async loadData() {
-        console.log('🔄 Loading data...');
         try {
             // Try to load from Supabase first
-            console.log('📡 Attempting to load from Supabase...');
             const supabaseData = await window.matchaSupabaseAPI.getAllUsers();
-            console.log('📡 Supabase response:', supabaseData);
             
             if (supabaseData && supabaseData.users) {
                 this.data = supabaseData;
-                console.log('✅ Data loaded from Supabase:', this.data);
             } else {
                 throw new Error('No data from Supabase');
             }
@@ -57,19 +53,14 @@ class MatchaCodeApp {
                 const parsedData = JSON.parse(savedData);
                 // Merge with default structure to handle new users
                 this.data.users = { ...this.data.users, ...parsedData.users };
-                console.log('📱 Data loaded from localStorage:', this.data);
-            } else {
-                console.log('🆕 Using default data structure');
             }
         }
         
         // Migrate old UTC-based date keys to local timezone format
         this.migrateDateKeys();
-        console.log('✅ Data loading completed');
     }
 
     migrateDateKeys() {
-        console.log('Checking for date key migration...');
         let migrationNeeded = false;
         
         for (const userId in this.data.users) {
@@ -157,20 +148,12 @@ class MatchaCodeApp {
 
     // UI Updates
     updateUI() {
-        console.log('updateUI called');
-        console.log('Updating stats...');
         this.updateStats();
-        console.log('Updating user cards...');
         this.updateUserCards();
-        console.log('Updating check-in cards...');
         this.updateCheckinCards();
-        console.log('Updating activity list...');
         this.updateActivityList();
-        console.log('Updating date...');
         this.updateDate();
-        console.log('Checking for missed days...');
         this.checkForMissedDays();
-        console.log('updateUI completed');
     }
 
     updateStats() {
@@ -184,39 +167,18 @@ class MatchaCodeApp {
         // Calculate total matcha owed
         const totalMatchaOwed = (bilge.totalMatchaOwed || 0) + (domenica.totalMatchaOwed || 0);
 
-        console.log('📊 Stats update - Bilge:', { 
-            streak: bilge.currentStreak, 
-            solved: bilge.totalSolved, 
-            matchaOwed: bilge.totalMatchaOwed || 0,
-            challenges: Object.keys(bilge.dailyChallenges).length,
-            completedDates: Object.keys(bilge.dailyChallenges).filter(date => bilge.dailyChallenges[date]?.completed)
-        });
-        console.log('📊 Stats update - Domenica:', { 
-            streak: domenica.currentStreak, 
-            solved: domenica.totalSolved, 
-            matchaOwed: domenica.totalMatchaOwed || 0,
-            challenges: Object.keys(domenica.dailyChallenges).length,
-            completedDates: Object.keys(domenica.dailyChallenges).filter(date => domenica.dailyChallenges[date]?.completed)
-        });
-        console.log('📊 Stats update - Combined streak:', combinedStreak);
-        console.log('📊 Stats update - Total solved:', totalSolved);
-        console.log('Stats update - Total matcha owed:', totalMatchaOwed);
-
         const totalStreakElement = document.getElementById('totalStreak');
         const totalSolvedElement = document.getElementById('totalSolved');
         const totalMatchaElement = document.getElementById('totalMatchaOwed');
 
         if (totalStreakElement) {
             totalStreakElement.textContent = combinedStreak;
-            console.log('Updated totalStreak to:', combinedStreak);
         }
         if (totalSolvedElement) {
             totalSolvedElement.textContent = totalSolved;
-            console.log('Updated totalSolved to:', totalSolved);
         }
         if (totalMatchaElement) {
             totalMatchaElement.textContent = totalMatchaOwed;
-            console.log('Updated totalMatchaOwed to:', totalMatchaOwed);
         }
     }
 
@@ -259,13 +221,6 @@ class MatchaCodeApp {
             }
         }
         
-        console.log('Combined streak calculation:', {
-            bilgeDates,
-            domenicaDates,
-            bothCompletedDates,
-            mostRecentDate: this.getDateKey(mostRecentDate),
-            streak
-        });
         
         return streak;
     }
@@ -290,14 +245,6 @@ class MatchaCodeApp {
         const mostRecentDate = completedDates[0];
         if (mostRecentDate !== today && mostRecentDate !== yesterday) {
             // Most recent completion is not today or yesterday, streak is 0
-            console.log('Individual streak calculation for', user.name, ':', {
-                completedDates,
-                mostRecentDate,
-                today,
-                yesterday,
-                streak: 0,
-                reason: 'Most recent completion is not today or yesterday'
-            });
             return 0;
         }
         
@@ -318,28 +265,16 @@ class MatchaCodeApp {
             }
         }
         
-        console.log('Individual streak calculation for', user.name, ':', {
-            completedDates,
-            mostRecentDate,
-            today,
-            yesterday,
-            streak
-        });
         
         return streak;
     }
 
     checkForMissedDays() {
-        console.log('Checking for missed days from September 3rd, 2025 to yesterday...');
-        
         // Define the start date: September 3rd, 2025
         const startDate = new Date('2025-09-03');
         const today = new Date();
         const yesterday = new Date(today);
         yesterday.setDate(today.getDate() - 1);
-        
-        console.log('Start date:', startDate.toDateString());
-        console.log('Yesterday:', yesterday.toDateString());
         
         // Check each user for missed days from September 3rd to yesterday
         ['bilge', 'domenica'].forEach(userId => {
@@ -386,34 +321,6 @@ class MatchaCodeApp {
         this.saveData();
     }
 
-    getImplementationDate() {
-        // Find the earliest completion date across both users
-        let earliestDate = null;
-        
-        ['bilge', 'domenica'].forEach(userId => {
-            const user = this.data.users[userId];
-            const completedDates = Object.keys(user.dailyChallenges).filter(date => 
-                user.dailyChallenges[date]?.completed
-            );
-            
-            if (completedDates.length > 0) {
-                completedDates.sort((a, b) => new Date(a) - new Date(b));
-                const userEarliestDate = new Date(completedDates[0]);
-                
-                if (!earliestDate || userEarliestDate < earliestDate) {
-                    earliestDate = userEarliestDate;
-                }
-            }
-        });
-        
-        // If no completions exist, use today as implementation date
-        if (!earliestDate) {
-            earliestDate = new Date();
-        }
-        
-        return earliestDate;
-    }
-
     updateUserCards() {
         const bilge = this.data.users.bilge;
         const domenica = this.data.users.domenica;
@@ -431,12 +338,10 @@ class MatchaCodeApp {
         
         if (bilgeStreak) {
             bilgeStreak.textContent = bilge.currentStreak;
-            console.log('Set Bilge streak element to:', bilge.currentStreak);
         }
         if (bilgeSolved) bilgeSolved.textContent = bilge.totalSolved;
         if (bilgeMatcha) {
             bilgeMatcha.textContent = bilge.totalMatchaOwed || 0;
-            console.log('Set Bilge matcha owed to:', bilge.totalMatchaOwed || 0);
         }
 
         // Update Domenica's stats in the check-in card
@@ -446,12 +351,10 @@ class MatchaCodeApp {
         
         if (domenicaStreak) {
             domenicaStreak.textContent = domenica.currentStreak;
-            console.log('Set Domenica streak element to:', domenica.currentStreak);
         }
         if (domenicaSolved) domenicaSolved.textContent = domenica.totalSolved;
         if (domenicaMatcha) {
             domenicaMatcha.textContent = domenica.totalMatchaOwed || 0;
-            console.log('Set Domenica matcha owed to:', domenica.totalMatchaOwed || 0);
         }
     }
 
@@ -519,33 +422,15 @@ class MatchaCodeApp {
         };
         const formattedDate = today.toLocaleDateString('en-US', options);
         
-        // Multiple attempts to find and update the date element
-        const updateDateElement = () => {
-            const dateElement = document.getElementById('todayDate');
-            console.log('Looking for date element:', dateElement);
-            if (dateElement) {
-                console.log('Found date element, setting to:', formattedDate);
-                dateElement.textContent = formattedDate;
-                return true;
-            }
-            return false;
-        };
-        
-        // Try immediately
-        if (!updateDateElement()) {
-            console.log('Date element not found, trying again...');
-            // Try multiple times with increasing delays
-            setTimeout(() => updateDateElement(), 50);
-            setTimeout(() => updateDateElement(), 100);
-            setTimeout(() => updateDateElement(), 200);
-            setTimeout(() => updateDateElement(), 500);
+        const dateElement = document.getElementById('todayDate');
+        if (dateElement) {
+            dateElement.textContent = formattedDate;
         }
     }
 
-
-
     updateActivityList() {
         const activityList = document.getElementById('activityList');
+        const template = document.getElementById('activityItemTemplate');
         const allActivityHistory = [];
         
         // Combine activity history from both users
@@ -559,50 +444,50 @@ class MatchaCodeApp {
         });
 
         if (allActivityHistory.length === 0) {
-            activityList.innerHTML = `
-                <div class="empty-state">
-                    <i class="fas fa-chart-line"></i>
-                    <p>Start your LeetCode journey today!</p>
-                </div>
-            `;
+            // Show empty state (already in HTML)
+            const emptyState = activityList.querySelector('.empty-state');
+            if (emptyState) {
+                emptyState.style.display = 'block';
+            }
             return;
         }
 
-        activityList.innerHTML = allActivityHistory
+        // Hide empty state
+        const emptyState = activityList.querySelector('.empty-state');
+        if (emptyState) {
+            emptyState.style.display = 'none';
+        }
+
+        // Clear existing activity items
+        const existingItems = activityList.querySelectorAll('.activity-item');
+        existingItems.forEach(item => item.remove());
+
+        // Create activity items using template
+        const recentActivities = allActivityHistory
             .slice(-5) // Show last 5 entries
-            .reverse()
-            .map(entry => `
-                <div class="activity-item">
-                    <div>
-                        <div class="item-description">${entry.user}: ${entry.description}</div>
-                        <div class="item-date">${entry.date}</div>
-                    </div>
-                    <div class="item-status">
-                        <i class="fas fa-check-circle"></i>
-                    </div>
-                </div>
-            `).join('');
+            .reverse();
+
+        recentActivities.forEach(entry => {
+            const clone = template.content.cloneNode(true);
+            const description = clone.querySelector('.item-description');
+            const date = clone.querySelector('.item-date');
+            
+            description.textContent = `${entry.user}: ${entry.description}`;
+            date.textContent = entry.date;
+            
+            activityList.appendChild(clone);
+        });
     }
 
     // Authentication and Actions
     showAuthModal(user, actionType) {
-        console.log('showAuthModal called with:', user, actionType);
         this.pendingAction = { user, actionType };
         
         const userData = this.data.users[user];
         const today = this.getTodayKey();
         
-        console.log('=== DEBUG INFO ===');
-        console.log('Current time:', new Date().toString());
-        console.log('Today key (local):', today);
-        console.log('User challenges:', userData.dailyChallenges);
-        console.log('Today challenge status:', userData.dailyChallenges[today]);
-        console.log('All challenge dates:', Object.keys(userData.dailyChallenges));
-        console.log('==================');
-        
         // Check if already completed
         if (userData.dailyChallenges[today]?.completed) {
-            console.log('User has already completed today\'s challenge');
             alert(`${userData.name} has already completed today's challenge!`);
             return;
         }
@@ -622,20 +507,16 @@ class MatchaCodeApp {
     }
 
     executePendingAction() {
-        console.log('executePendingAction called with:', this.pendingAction);
         if (!this.pendingAction) {
-            console.log('No pending action found');
             return;
         }
         
         const { user, actionType } = this.pendingAction;
-        console.log('Executing action:', actionType, 'for user:', user);
         
         if (actionType === 'complete') {
-                    console.log('Calling markChallengeComplete for:', user);
-        this.markChallengeComplete(user).then(() => {
-            console.log('Challenge completion saved successfully');
-        }).catch(error => {
+            this.markChallengeComplete(user).then(() => {
+                // Challenge completion saved successfully
+            }).catch(error => {
             console.error('Error completing challenge:', error);
         });
         }
@@ -644,20 +525,13 @@ class MatchaCodeApp {
     }
 
     async markChallengeComplete(userId) {
-        console.log('markChallengeComplete called for user:', userId);
         const user = this.data.users[userId];
         const today = this.getTodayKey();
         
-        console.log('User data:', user);
-        console.log('Today key:', today);
-        console.log('Current challenges:', user.dailyChallenges);
-        
         if (user.dailyChallenges[today]?.completed) {
-            console.log('Already completed, returning');
             return; // Already completed
         }
 
-        console.log('Marking as completed...');
         // Mark as completed
         user.dailyChallenges[today] = {
             completed: true,
@@ -667,7 +541,6 @@ class MatchaCodeApp {
         // Update stats
         user.totalSolved++;
         user.currentStreak = this.calculateIndividualStreak(user);
-        console.log('Updated stats - totalSolved:', user.totalSolved, 'currentStreak:', user.currentStreak);
 
         // Add to activity
         this.addActivity(user, 'Completed today\'s LeetCode challenge!', 'completed');
@@ -677,17 +550,13 @@ class MatchaCodeApp {
             await window.matchaSupabaseAPI.updateChallenge(userId, today, true, new Date().toISOString());
             await window.matchaSupabaseAPI.updateStreak(userId, user.currentStreak, user.totalMatchaOwed);
             await window.matchaSupabaseAPI.addActivity(userId, 'Completed today\'s LeetCode challenge!', 'completed');
-            console.log('Data saved to Supabase');
         } catch (error) {
             console.error('Error saving to Supabase:', error);
             // Fallback to localStorage
             this.saveData();
         }
-        console.log('Data saved, updating UI...');
         this.updateUI();
-        console.log('UI updated, showing success modal...');
         this.showSuccessModal();
-        console.log('markChallengeComplete completed successfully');
     }
 
     // Helper Methods
@@ -708,6 +577,7 @@ class MatchaCodeApp {
         return `${year}-${month}-${day}`;
     }
 
+    // To Fix: activity should not be logged in if undefined
     addActivity(user, description, type) {
         user.activityHistory.push({
             description,
@@ -801,27 +671,17 @@ function updateDateManually() {
     }
 }
 
-// Reset all data function
-function resetAllData() {
-    if (window.matchaApp) {
-        window.matchaApp.resetAllData();
-        console.log('✅ All data has been reset! Ready to start fresh with your friend!');
-    } else {
-        console.error('MatchaCode app not found');
-    }
-}
-
 // Debug function to clear all data (accessible from browser console)
-function clearAllData() {
-    if (confirm('Are you sure you want to clear ALL data? This cannot be undone!')) {
-        if (window.matchaApp) {
-            window.matchaApp.resetAllData();
-            console.log('✅ All data cleared!');
-        } else {
-            console.error('MatchaCode app not found');
-        }
-    }
-}
+// function clearAllData() {
+//     if (confirm('Are you sure you want to clear ALL data? This cannot be undone!')) {
+//         if (window.matchaApp) {
+//             window.matchaApp.resetAllData();
+//             console.log('✅ All data cleared!');
+//         } else {
+//             console.error('MatchaCode app not found');
+//         }
+//     }
+// }
 
 // Debug function to inspect current data
 function inspectData() {
