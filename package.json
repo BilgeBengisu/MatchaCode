@@ -21,9 +21,9 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/yourusername/matchacode.git"
+    "url": "https://github.com/BilgeBengisu/matchacode.git"
   },
-  "homepage": "https://yourusername.github.io/matchacode",
+  "homepage": "https://github.com/BilgeBengisu/MatchaCode",
   "engines": {
     "node": ">=14.0.0"
   },
