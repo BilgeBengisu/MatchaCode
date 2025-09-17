@@ -1,31 +1,29 @@
-// MatchaCode - Daily LeetCode Challenge Tracker
-// Two-user system: Bilge and Domenica with authentication
+// MatchaCode - Daily LeetCode Challenge Tracker (Legacy DB Version)
 
 class MatchaCodeApp {
     constructor() {
-        this.pendingAction = null; // Stores the pending action (user, type)
+        this.pendingAction = null; 
         this.data = {
             users: {
                 bilge: {
-                    name: 'Bilge',
+                    user_old_id: 'bilge',
+                    username_old: 'Bilge',
                     currentStreak: 0,
                     totalSolved: 0,
                     totalMatchaOwed: 0,
-                    dailyChallenges: {},
                     activityHistory: []
                 },
                 domenica: {
-                    name: 'Domenica',
+                    user_old_id: 'domenica',
+                    username_old: 'Domenica',
                     currentStreak: 0,
                     totalSolved: 0,
                     totalMatchaOwed: 0,
-                    dailyChallenges: {},
                     activityHistory: []
                 }
             }
         };
-        
-        // Get password from environment configuration
+
         this.accessPassword = window.MATCHACODE_CONFIG?.accessPassword;
     }
 
@@ -34,328 +32,101 @@ class MatchaCodeApp {
         this.updateUI();
     }
 
-    // Data Management
+    // --- Data Management ---
     async loadData() {
         try {
-            // Try to load from Supabase first
-            const supabaseData = await window.matchaSupabaseAPI.getAllUsers();
-            
-            if (supabaseData && supabaseData.users) {
-                this.data = supabaseData;
+            const supabaseData = await window.matchaSupabaseAPI.getAllUsersOld(); 
+            if (supabaseData && supabaseData.users_old) {
+                this.data.users = supabaseData.users_old;
             } else {
                 throw new Error('No data from Supabase');
             }
         } catch (error) {
-            console.error('❌ Error loading from Supabase, falling back to localStorage:', error);
-            // Fallback to localStorage
+            console.error('Error loading from Supabase, falling back to localStorage:', error);
             const savedData = localStorage.getItem('matchacode_data');
             if (savedData) {
                 const parsedData = JSON.parse(savedData);
-                // Merge with default structure to handle new users
                 this.data.users = { ...this.data.users, ...parsedData.users };
             }
-        }
-        
-        // Migrate old UTC-based date keys to local timezone format
-        this.migrateDateKeys();
-    }
-
-    migrateDateKeys() {
-        let migrationNeeded = false;
-        
-        for (const userId in this.data.users) {
-            const user = this.data.users[userId];
-            const newDailyChallenges = {};
-            
-            for (const dateKey in user.dailyChallenges) {
-                // Check if this is an old UTC-based date key
-                if (dateKey.includes('T') || dateKey.length > 10) {
-                    console.log('Found old date key format:', dateKey);
-                    migrationNeeded = true;
-                    
-                    // Convert to local date
-                    const date = new Date(dateKey);
-                    const newDateKey = this.getDateKey(date);
-                    newDailyChallenges[newDateKey] = user.dailyChallenges[dateKey];
-                } else {
-                    // Keep existing local date keys
-                    newDailyChallenges[dateKey] = user.dailyChallenges[dateKey];
-                }
-            }
-            
-            user.dailyChallenges = newDailyChallenges;
-        }
-        
-        if (migrationNeeded) {
-            console.log('Date key migration completed, saving data...');
-            this.saveData();
         }
     }
 
     async saveData() {
         try {
-            // Save to Supabase
             for (const userId in this.data.users) {
                 const user = this.data.users[userId];
-                await window.matchaSupabaseAPI.updateStreak(
+                await window.matchaSupabaseAPI.updateStreakOld(
                     userId, 
                     user.currentStreak, 
                     user.totalMatchaOwed
                 );
             }
-            console.log('Data saved to Supabase');
+            console.log('Data saved to users_old table');
         } catch (error) {
             console.error('Error saving to Supabase, falling back to localStorage:', error);
-            // Fallback to localStorage
             localStorage.setItem('matchacode_data', JSON.stringify(this.data));
         }
     }
 
     resetAllData() {
-        // Clear localStorage
         localStorage.removeItem('matchacode_data');
-        
-        // Reset to default data structure
-        this.data = {
-            users: {
-                bilge: {
-                    name: 'Bilge',
-                    currentStreak: 0,
-                    totalSolved: 0,
-                    totalMatchaOwed: 0,
-                    dailyChallenges: {},
-                    activityHistory: []
-                },
-                domenica: {
-                    name: 'Domenica',
-                    currentStreak: 0,
-                    totalSolved: 0,
-                    totalMatchaOwed: 0,
-                    dailyChallenges: {},
-                    activityHistory: []
-                }
-            }
+
+        this.data.users = {
+            bilge: { user_old_id: 'bilge', username_old: 'Bilge', currentStreak: 0, totalSolved: 0, totalMatchaOwed: 0, activityHistory: [] },
+            domenica: { user_old_id: 'domenica', username_old: 'Domenica', currentStreak: 0, totalSolved: 0, totalMatchaOwed: 0, activityHistory: [] }
         };
-        
-        // Save the reset data
+
         this.saveData();
-        
-        // Update UI
         this.updateUI();
-        
         console.log('All data has been reset to default state');
     }
 
-    // UI Updates
+    // --- UI Updates ---
     updateUI() {
         this.updateStats();
         this.updateUserCards();
         this.updateCheckinCards();
         this.updateActivityList();
         this.updateDate();
-        this.checkForMissedDays();
     }
 
     updateStats() {
         const bilge = this.data.users.bilge;
         const domenica = this.data.users.domenica;
-        
-        // Calculate combined streak - only increases when both users complete on the same day
+
         const combinedStreak = this.calculateCombinedStreak();
         const totalSolved = bilge.totalSolved + domenica.totalSolved;
-        
-        // Calculate total matcha owed
         const totalMatchaOwed = (bilge.totalMatchaOwed || 0) + (domenica.totalMatchaOwed || 0);
 
-        const totalStreakElement = document.getElementById('totalStreak');
-        const totalSolvedElement = document.getElementById('totalSolved');
-        const totalMatchaElement = document.getElementById('totalMatchaOwed');
-
-        if (totalStreakElement) {
-            totalStreakElement.textContent = combinedStreak;
-        }
-        if (totalSolvedElement) {
-            totalSolvedElement.textContent = totalSolved;
-        }
-        if (totalMatchaElement) {
-            totalMatchaElement.textContent = totalMatchaOwed;
-        }
+        document.getElementById('totalStreak').textContent = combinedStreak;
+        document.getElementById('totalSolved').textContent = totalSolved;
+        document.getElementById('totalMatchaOwed').textContent = totalMatchaOwed;
     }
 
     calculateCombinedStreak() {
         const bilge = this.data.users.bilge;
         const domenica = this.data.users.domenica;
-        
-        // Get all dates where both users completed challenges
-        const bilgeDates = Object.keys(bilge.dailyChallenges).filter(date => 
-            bilge.dailyChallenges[date]?.completed
-        );
-        const domenicaDates = Object.keys(domenica.dailyChallenges).filter(date => 
-            domenica.dailyChallenges[date]?.completed
-        );
-        
-        // Find dates where both completed
-        const bothCompletedDates = bilgeDates.filter(date => domenicaDates.includes(date));
-        
-        if (bothCompletedDates.length === 0) {
-            return 0;
-        }
-        
-        // Sort dates in descending order (most recent first)
-        bothCompletedDates.sort((a, b) => new Date(b) - new Date(a));
-        
-        // Calculate consecutive days from the most recent completion backwards
-        let streak = 1; // Start with 1 for the most recent completion
-        const mostRecentDate = new Date(bothCompletedDates[0]);
-        
-        for (let i = 1; i < bothCompletedDates.length; i++) {
-            const currentDate = new Date(bothCompletedDates[i]);
-            const expectedDate = new Date(mostRecentDate);
-            expectedDate.setDate(mostRecentDate.getDate() - i);
-            
-            // Check if this date is exactly one day before the previous date
-            if (this.getDateKey(currentDate) === this.getDateKey(expectedDate)) {
-                streak++;
-            } else {
-                break; // Streak broken
-            }
-        }
-        
-        
-        return streak;
+
+        // Assume streak is consecutive completed days in database; use stored currentStreak
+        // Optional: could calculate dynamically from DB if needed
+        return Math.min(bilge.currentStreak, domenica.currentStreak);
     }
 
     calculateIndividualStreak(user) {
-        // Get all dates where user completed challenges
-        const completedDates = Object.keys(user.dailyChallenges).filter(date => 
-            user.dailyChallenges[date]?.completed
-        );
-        
-        if (completedDates.length === 0) {
-            return 0;
-        }
-        
-        // Sort dates in descending order (most recent first)
-        completedDates.sort((a, b) => new Date(b) - new Date(a));
-        
-        const today = this.getTodayKey();
-        const yesterday = this.getDateKey(new Date(Date.now() - 24 * 60 * 60 * 1000));
-        
-        // Check if the most recent completion is today or yesterday
-        const mostRecentDate = completedDates[0];
-        if (mostRecentDate !== today && mostRecentDate !== yesterday) {
-            // Most recent completion is not today or yesterday, streak is 0
-            return 0;
-        }
-        
-        // Calculate consecutive days from the most recent completion backwards
-        let streak = 1; // Start with 1 for the most recent completion
-        const mostRecentDateObj = new Date(mostRecentDate);
-        
-        for (let i = 1; i < completedDates.length; i++) {
-            const currentDate = new Date(completedDates[i]);
-            const expectedDate = new Date(mostRecentDateObj);
-            expectedDate.setDate(mostRecentDateObj.getDate() - i);
-            
-            // Check if this date is exactly one day before the previous date
-            if (this.getDateKey(currentDate) === this.getDateKey(expectedDate)) {
-                streak++;
-            } else {
-                break; // Streak broken
-            }
-        }
-        
-        
-        return streak;
-    }
-
-    checkForMissedDays() {
-        // Define the start date: September 3rd, 2025
-        const startDate = new Date('2025-09-03');
-        const today = new Date();
-        const yesterday = new Date(today);
-        yesterday.setDate(today.getDate() - 1);
-        
-        // Check each user for missed days from September 3rd to yesterday
-        ['bilge', 'domenica'].forEach(userId => {
-            const user = this.data.users[userId];
-            let missedDays = 0;
-            
-            // Check each day from September 3rd to yesterday
-            const checkDate = new Date(startDate);
-            
-            while (checkDate <= yesterday) {
-                const checkDateKey = this.getDateKey(checkDate);
-                
-                // If this day is not completed and not already marked as missed
-                if (!user.dailyChallenges[checkDateKey]?.completed && 
-                    !user.dailyChallenges[checkDateKey]?.missed) {
-                    
-                    //console.log(`${user.username} missed day: ${checkDateKey}`);
-                    
-                    // Mark as missed
-                    user.dailyChallenges[checkDateKey] = {
-                        completed: false,
-                        missed: true,
-                        timestamp: new Date().toISOString()
-                    };
-                    
-                    missedDays++;
-                }
-                
-                // Move to next day
-                checkDate.setDate(checkDate.getDate() + 1);
-            }
-            
-            // Update matcha owed count
-            if (missedDays > 0) {
-                user.totalMatchaOwed = (user.totalMatchaOwed || 0) + missedDays;
-                //console.log(`${user.username} missed ${missedDays} days - now owes ${user.totalMatchaOwed} matcha(s)`);
-                
-                // Add to activity history
-                this.addActivity(`${user.username} missed ${missedDays} LeetCode challenge(s) from Sep 3rd to yesterday - owes ${missedDays} matcha!`, 'missed');
-            }
-        });
-        
-        // Save data if any changes were made
-        this.saveData();
+        return user.currentStreak; // Already stored in database
     }
 
     updateUserCards() {
         const bilge = this.data.users.bilge;
         const domenica = this.data.users.domenica;
-        const today = this.getTodayKey();
 
-        console.log('Updating user cards with streaks:', {
-            bilge: bilge.currentStreak,
-            domenica: domenica.currentStreak
-        });
+        document.getElementById('bilgeStreak').textContent = bilge.currentStreak;
+        document.getElementById('bilgeSolved').textContent = bilge.totalSolved;
+        document.getElementById('bilgeMatcha').textContent = bilge.totalMatchaOwed || 0;
 
-        // Update Bilge's stats in the check-in card
-        const bilgeStreak = document.getElementById('bilgeStreak');
-        const bilgeSolved = document.getElementById('bilgeSolved');
-        const bilgeMatcha = document.getElementById('bilgeMatcha');
-        
-        if (bilgeStreak) {
-            bilgeStreak.textContent = bilge.currentStreak;
-        }
-        if (bilgeSolved) bilgeSolved.textContent = bilge.totalSolved;
-        if (bilgeMatcha) {
-            bilgeMatcha.textContent = bilge.totalMatchaOwed || 0;
-        }
-
-        // Update Domenica's stats in the check-in card
-        const domenicaStreak = document.getElementById('domenicaStreak');
-        const domenicaSolved = document.getElementById('domenicaSolved');
-        const domenicaMatcha = document.getElementById('domenicaMatcha');
-        
-        if (domenicaStreak) {
-            domenicaStreak.textContent = domenica.currentStreak;
-        }
-        if (domenicaSolved) domenicaSolved.textContent = domenica.totalSolved;
-        if (domenicaMatcha) {
-            domenicaMatcha.textContent = domenica.totalMatchaOwed || 0;
-        }
+        document.getElementById('domenicaStreak').textContent = domenica.currentStreak;
+        document.getElementById('domenicaSolved').textContent = domenica.totalSolved;
+        document.getElementById('domenicaMatcha').textContent = domenica.totalMatchaOwed || 0;
     }
 
     updateCheckinCards() {
@@ -363,288 +134,184 @@ class MatchaCodeApp {
         const domenica = this.data.users.domenica;
         const today = this.getTodayKey();
 
-        console.log('updateCheckinCards - Today:', today);
-        console.log('updateCheckinCards - Bilge completed:', bilge.dailyChallenges[today]?.completed);
-        console.log('updateCheckinCards - Domenica completed:', domenica.dailyChallenges[today]?.completed);
-
-        // Update Bilge's check-in card styling based on completion status
-        const bilgeCheckinCard = document.getElementById('bilgeCheckinCard');
-        const bilgeCheckinStatus = document.getElementById('bilgeCheckinStatus');
-        
-        console.log('Bilge elements found:', { card: !!bilgeCheckinCard, status: !!bilgeCheckinStatus });
-        
-        if (bilgeCheckinCard && bilgeCheckinStatus) {
-            if (bilge.dailyChallenges[today]?.completed) {
-                console.log('Updating Bilge card to completed state');
-                bilgeCheckinCard.style.borderColor = '#4CAF50';
-                bilgeCheckinCard.style.backgroundColor = '#f1f8e9';
-                bilgeCheckinStatus.textContent = 'Completed today\'s challenge! ✅';
-                bilgeCheckinStatus.className = 'user-checkin-status completed';
+        const bilgeCard = document.getElementById('bilgeCheckinCard');
+        const bilgeStatus = document.getElementById('bilgeCheckinStatus');
+        if (bilgeCard && bilgeStatus) {
+            if (bilge.dailyChallenges?.[today]?.completed) {
+                bilgeCard.style.borderColor = '#4CAF50';
+                bilgeCard.style.backgroundColor = '#f1f8e9';
+                bilgeStatus.textContent = 'Completed today\'s challenge! ✅';
+                bilgeStatus.className = 'user-checkin-status completed';
             } else {
-                console.log('Updating Bilge card to not completed state');
-                bilgeCheckinCard.style.borderColor = '#e1e8ed';
-                bilgeCheckinCard.style.backgroundColor = '#f8f9fa';
-                bilgeCheckinStatus.textContent = 'Not checked in today';
-                bilgeCheckinStatus.className = 'user-checkin-status';
+                bilgeCard.style.borderColor = '#e1e8ed';
+                bilgeCard.style.backgroundColor = '#f8f9fa';
+                bilgeStatus.textContent = 'Not checked in today';
+                bilgeStatus.className = 'user-checkin-status';
             }
         }
 
-        // Update Domenica's check-in card styling based on completion status
-        const domenicaCheckinCard = document.getElementById('domenicaCheckinCard');
-        const domenicaCheckinStatus = document.getElementById('domenicaCheckinStatus');
-        
-        console.log('Domenica elements found:', { card: !!domenicaCheckinCard, status: !!domenicaCheckinStatus });
-        
-        if (domenicaCheckinCard && domenicaCheckinStatus) {
-            if (domenica.dailyChallenges[today]?.completed) {
-                console.log('Updating Domenica card to completed state');
-                domenicaCheckinCard.style.borderColor = '#4CAF50';
-                domenicaCheckinCard.style.backgroundColor = '#f1f8e9';
-                domenicaCheckinStatus.textContent = 'Completed today\'s challenge! ✅';
-                domenicaCheckinStatus.className = 'user-checkin-status completed';
+        const domenicaCard = document.getElementById('domenicaCheckinCard');
+        const domenicaStatus = document.getElementById('domenicaCheckinStatus');
+        if (domenicaCard && domenicaStatus) {
+            if (domenica.dailyChallenges?.[today]?.completed) {
+                domenicaCard.style.borderColor = '#4CAF50';
+                domenicaCard.style.backgroundColor = '#f1f8e9';
+                domenicaStatus.textContent = 'Completed today\'s challenge! ✅';
+                domenicaStatus.className = 'user-checkin-status completed';
             } else {
-                console.log('Updating Domenica card to not completed state');
-                domenicaCheckinCard.style.borderColor = '#e1e8ed';
-                domenicaCheckinCard.style.backgroundColor = '#f8f9fa';
-                domenicaCheckinStatus.textContent = 'Not checked in today';
-                domenicaCheckinStatus.className = 'user-checkin-status';
+                domenicaCard.style.borderColor = '#e1e8ed';
+                domenicaCard.style.backgroundColor = '#f8f9fa';
+                domenicaStatus.textContent = 'Not checked in today';
+                domenicaStatus.className = 'user-checkin-status';
             }
         }
     }
 
     updateDate() {
         const today = new Date();
-        const options = { 
-            weekday: 'long', 
-            year: 'numeric', 
-            month: 'long', 
-            day: 'numeric' 
-        };
+        const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
         const formattedDate = today.toLocaleDateString('en-US', options);
-        
         const dateElement = document.getElementById('todayDate');
-        if (dateElement) {
-            dateElement.textContent = formattedDate;
-        }
+        if (dateElement) dateElement.textContent = formattedDate;
     }
 
     updateActivityList() {
         const activityList = document.getElementById('activityList');
         const template = document.getElementById('activityItemTemplate');
         const allActivityHistory = [];
-        
-        // Combine activity history from both users
+
         Object.values(this.data.users).forEach(user => {
             user.activityHistory.forEach(entry => {
-                allActivityHistory.push({
-                    ...entry,
-                    user: user.name
-                });
+                allActivityHistory.push({ ...entry, user: user.username_old });
             });
         });
 
-        if (allActivityHistory.length === 0) {
-            // Show empty state (already in HTML)
-            const emptyState = activityList.querySelector('.empty-state');
-            if (emptyState) {
-                emptyState.style.display = 'block';
-            }
-            return;
-        }
-
-        // Hide empty state
         const emptyState = activityList.querySelector('.empty-state');
-        if (emptyState) {
+        if (!allActivityHistory.length) {
+            if (emptyState) emptyState.style.display = 'block';
+            return;
+        } else if (emptyState) {
             emptyState.style.display = 'none';
         }
 
-        // Clear existing activity items
-        const existingItems = activityList.querySelectorAll('.activity-item');
-        existingItems.forEach(item => item.remove());
+        activityList.querySelectorAll('.activity-item').forEach(item => item.remove());
 
-        // Create activity items using template
-        const recentActivities = allActivityHistory
-            .slice(-3) // Show last 5 entries
-            .reverse();
-
-        recentActivities.forEach(entry => {
+        allActivityHistory.slice(-3).reverse().forEach(entry => {
             const clone = template.content.cloneNode(true);
-            const description = clone.querySelector('.item-description');
-            const date = clone.querySelector('.item-date');
-            
-            description.textContent = `${entry.user}: ${entry.description}`;
-            date.textContent = entry.date;
-            
+            clone.querySelector('.item-description').textContent = `${entry.user}: ${entry.description}`;
+            clone.querySelector('.item-date').textContent = entry.date;
             activityList.appendChild(clone);
         });
     }
 
-    // Authentication and Actions
+    // --- Authentication & Actions ---
     showAuthModal(user, actionType) {
         this.pendingAction = { user, actionType };
-        
         const userData = this.data.users[user];
         const today = this.getTodayKey();
-        
-        // Check if already completed
-        if (userData.dailyChallenges[today]?.completed) {
-            alert(`${userData.name} has already completed today's challenge!`);
+
+        if (userData.dailyChallenges?.[today]?.completed) {
+            alert(`${userData.username_old} has already completed today's challenge!`);
             return;
         }
 
-        const actionText = 'mark as complete';
-        document.getElementById('authModalTitle').textContent = `Check in for ${userData.name}`;
-        document.getElementById('authModalMessage').textContent = `Enter the password to ${actionText} today's challenge.`;
+        document.getElementById('authModalTitle').textContent = `Check in for ${userData.username_old}`;
+        document.getElementById('authModalMessage').textContent = `Enter the password to mark as complete today's challenge.`;
         document.getElementById('authPassword').value = '';
-        
         document.getElementById('authModal').classList.remove('hidden');
         document.getElementById('authPassword').focus();
-        console.log('Auth modal should be visible now');
     }
 
     authenticate(password) {
         return password === this.accessPassword;
     }
 
-    executePendingAction() {
-        if (!this.pendingAction) {
-            return;
-        }
-        
+    async executePendingAction() {
+        if (!this.pendingAction) return;
+
         const { user, actionType } = this.pendingAction;
-        
-        if (actionType === 'complete') {
-            this.markChallengeComplete(user).then(() => {
-                // Challenge completion saved successfully
-            }).catch(error => {
-            console.error('Error completing challenge:', error);
-        });
-        }
-        
+        if (actionType === 'complete') await this.markChallengeComplete(user);
+
         this.pendingAction = null;
     }
 
     async markChallengeComplete(userId) {
         const user = this.data.users[userId];
         const today = this.getTodayKey();
-        
-        if (user.dailyChallenges[today]?.completed) {
-            return; // Already completed
-        }
+        if (user.dailyChallenges?.[today]?.completed) return;
 
-        // Mark as completed
-        user.dailyChallenges[today] = {
-            completed: true,
-            timestamp: new Date().toISOString()
-        };
-
-        // Update stats
+        user.dailyChallenges = user.dailyChallenges || {};
+        user.dailyChallenges[today] = { completed: true, timestamp: new Date().toISOString() };
         user.totalSolved++;
         user.currentStreak = this.calculateIndividualStreak(user);
 
-        // Add to activity
         this.addActivity(user, 'Completed today\'s LeetCode challenge!', 'completed');
 
-        // Save to Supabase
         try {
-            await window.matchaSupabaseAPI.updateChallenge(userId, today, true, new Date().toISOString());
-            await window.matchaSupabaseAPI.updateStreak(userId, user.currentStreak, user.totalMatchaOwed);
-            await window.matchaSupabaseAPI.addActivity(userId, 'Completed today\'s LeetCode challenge!', 'completed');
+            await window.matchaSupabaseAPI.updateChallengeOld(userId, today, true, new Date().toISOString());
+            await window.matchaSupabaseAPI.updateStreakOld(userId, user.currentStreak, user.totalMatchaOwed);
+            await window.matchaSupabaseAPI.addActivityOld(userId, 'Completed today\'s LeetCode challenge!', 'completed');
         } catch (error) {
             console.error('Error saving to Supabase:', error);
-            // Fallback to localStorage
             this.saveData();
         }
         this.updateUI();
         this.showSuccessModal();
     }
 
-    // Helper Methods
+    // --- Helpers ---
     getTodayKey() {
         const today = new Date();
-        // Use local timezone instead of UTC to ensure correct daily boundaries
-        const year = today.getFullYear();
-        const month = String(today.getMonth() + 1).padStart(2, '0');
-        const day = String(today.getDate()).padStart(2, '0');
-        return `${year}-${month}-${day}`; // YYYY-MM-DD format in local timezone
-    }
-
-    getDateKey(date) {
-        // Helper function to get date key for any date object
-        const year = date.getFullYear();
-        const month = String(date.getMonth() + 1).padStart(2, '0');
-        const day = String(date.getDate()).padStart(2, '0');
-        return `${year}-${month}-${day}`;
+        const yyyy = today.getFullYear();
+        const mm = String(today.getMonth() + 1).padStart(2, '0');
+        const dd = String(today.getDate()).padStart(2, '0');
+        return `${yyyy}-${mm}-${dd}`;
     }
 
     addActivity(user, description, type) {
         user.activityHistory.push({
             description,
             type,
-            date: new Date().toLocaleDateString('en-US', {
-                month: 'short',
-                day: 'numeric',
-                hour: '2-digit',
-                minute: '2-digit'
-            })
+            date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
         });
     }
 
-    // Modal Functions
     showSuccessModal() {
         document.getElementById('successModal').classList.remove('hidden');
     }
 
     closeAuthModal() {
         document.getElementById('authModal').classList.add('hidden');
-        // Don't clear pendingAction here - let executePendingAction handle it
     }
 
-    // Event Listeners
+    // --- Event Listeners ---
     setupEventListeners() {
-        console.log('Setting up event listeners...');
-        
-        // Authentication form
         const authForm = document.getElementById('authForm');
         if (authForm) {
-            authForm.addEventListener('submit', (e) => {
+            authForm.addEventListener('submit', e => {
                 e.preventDefault();
-                console.log('Auth form submitted');
                 const password = document.getElementById('authPassword').value;
-                console.log('Password entered:', password);
-                
                 if (this.authenticate(password)) {
-                    console.log('Authentication successful');
                     this.closeAuthModal();
                     this.executePendingAction();
                 } else {
-                    console.log('Authentication failed');
-                    alert('Incorrect password! Hint: It\'s the drink that motivates us to code! 🍵');
+                    alert('Incorrect password! Hint: It\'s what motivates us to code! 🍵');
                     document.getElementById('authPassword').value = '';
                     document.getElementById('authPassword').focus();
                 }
             });
-        } else {
-            console.error('Auth form not found!');
         }
 
-        // Close modals on outside click
-        document.getElementById('successModal').addEventListener('click', (e) => {
-            if (e.target.id === 'successModal') {
-                window.closeModal();
-            }
+        document.getElementById('successModal')?.addEventListener('click', e => {
+            if (e.target.id === 'successModal') window.closeModal();
         });
 
-        document.getElementById('authModal').addEventListener('click', (e) => {
-            if (e.target.id === 'authModal') {
-                this.closeAuthModal();
-            }
+        document.getElementById('authModal')?.addEventListener('click', e => {
+            if (e.target.id === 'authModal') this.closeAuthModal();
         });
 
-        // Add storage event listener for tab synchronization
-        window.addEventListener('storage', (e) => {
+        window.addEventListener('storage', e => {
             if (e.key === 'matchacode_data') {
-                console.log('Data changed in another tab, reloading...');
                 this.loadData();
                 this.updateUI();
             }
@@ -652,59 +319,30 @@ class MatchaCodeApp {
     }
 }
 
-// Global functions for HTML onclick handlers
-function showAuthModal(user, actionType) {
-    window.matchaApp.showAuthModal(user, actionType);
-}
+// --- Global Functions ---
+function showAuthModal(user, actionType) { window.matchaApp.showAuthModal(user, actionType); }
+function closeAuthModal() { window.matchaApp.closeAuthModal(); }
+function showAboutModal() { document.getElementById('aboutModal')?.classList.remove('hidden'); }
+function closeAboutModal() { document.getElementById('aboutModal')?.classList.add('hidden'); }
 
-function closeAuthModal() {
-    window.matchaApp.closeAuthModal();
-}
-
-// About modal functions
-function showAboutModal() {
-    const modal = document.getElementById('aboutModal');
-    if (modal) {
-        modal.classList.remove('hidden');
-        console.log('About modal opened');
-    }
-}
-
-function closeAboutModal() {
-    const modal = document.getElementById('aboutModal');
-    if (modal) {
-        modal.classList.add('hidden');
-        console.log('About modal closed');
-    }
-}
-
-// Initialize the app when the page loads
+// --- Initialization ---
 document.addEventListener('DOMContentLoaded', async () => {
     window.matchaApp = new MatchaCodeApp();
     await window.matchaApp.init();
-    
-    // Setup event listeners after DOM is ready
     window.matchaApp.setupEventListeners();
-    
-    // Global modal close function
-    window.closeModal = () => {
-        document.getElementById('successModal').classList.add('hidden');
-    };
-    
-    // Add some fun easter eggs
-    document.addEventListener('keydown', (e) => {
-        // Konami code easter egg
-        if (e.key === 'ArrowUp' || e.key === 'ArrowDown' || e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
-            console.log('🎮 Konami code detected! Keep coding!');
-        }
-    });
 
-    // Add a fun console message
+    window.closeModal = () => document.getElementById('successModal')?.classList.add('hidden');
+
     console.log(`
         🍵 Welcome to MatchaCode! 🍵
         Daily LeetCode Challenge Tracker
-
         Built with ❤️ for Bilge and Domenica
         Keep up the great work! 💪
     `);
+
+    document.addEventListener('keydown', e => {
+        if (['ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.key)) {
+            console.log('🎮 Konami code detected! Keep coding!');
+        }
+    });
 });
