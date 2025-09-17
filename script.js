@@ -43,7 +43,7 @@ class MatchaCodeApp {
                 throw new Error('No data from Supabase');
             }
         } catch (error) {
-            console.error('❌ Error loading from Supabase, falling back to localStorage:', error);
+            console.error('Error loading from Supabase, falling back to localStorage:', error);
             // Fallback to localStorage
             const savedData = localStorage.getItem('matchacode_data');
             if (savedData) {
@@ -145,8 +145,212 @@ class MatchaCodeApp {
 
     // UI Updates - delegate to UIManager
     updateUI() {
-        if (window.uiManager) {
-            window.uiManager.updateUI();
+        this.updateStats();
+        this.updateUserCards();
+        this.updateCheckinCards();
+        this.updateActivityList();
+        this.updateDate();
+        this.checkForMissedDays();
+    }
+
+    async updateStats() {
+        const { data, error } = await supabase.rpc('get_dashboard');
+
+        if (error) {
+            console.error('Failed to fetch dashboard:', error);
+            return;
+        }
+
+        // Map users by ID
+        const usersMap = {};
+        data.forEach(user => {
+            usersMap[user.user_id.toLowerCase()] = {
+                totalSolved: user.total_solved,
+                totalMatchaOwed: user.matcha_owed,
+                currentStreak: user.current_streak,
+                recentActivities: user.recent_activities
+            };
+        });
+
+        const bilge = usersMap['bilge'] || {};
+        const domenica = usersMap['domenica'] || {};
+
+        // Combined streak: take the minimum of both users' current streaks
+        const combinedStreak = Math.min(bilge.currentStreak || 0, domenica.currentStreak || 0);
+
+        // Total solved
+        const totalSolved = (bilge.totalSolved || 0) + (domenica.totalSolved || 0);
+
+        // Total matcha owed
+        const totalMatchaOwed = (bilge.totalMatchaOwed || 0) + (domenica.totalMatchaOwed || 0);
+
+        // Update DOM elements
+        const totalStreakElement = document.getElementById('totalStreak');
+        const totalSolvedElement = document.getElementById('totalSolved');
+        const totalMatchaElement = document.getElementById('totalMatchaOwed');
+
+        if (totalStreakElement) totalStreakElement.textContent = combinedStreak;
+        if (totalSolvedElement) totalSolvedElement.textContent = totalSolved;
+        if (totalMatchaElement) totalMatchaElement.textContent = totalMatchaOwed;
+    }
+
+
+    calculateCombinedStreak() {
+        const bilge = this.data.users.bilge;
+        const domenica = this.data.users.domenica;
+        
+        // Get all dates where both users completed challenges
+        const bilgeDates = Object.keys(bilge.dailyChallenges).filter(date => 
+            bilge.dailyChallenges[date]?.completed
+        );
+        const domenicaDates = Object.keys(domenica.dailyChallenges).filter(date => 
+            domenica.dailyChallenges[date]?.completed
+        );
+        
+        // Find dates where both completed
+        const bothCompletedDates = bilgeDates.filter(date => domenicaDates.includes(date));
+        
+        if (bothCompletedDates.length === 0) {
+            return 0;
+        }
+        
+        // Sort dates in descending order (most recent first)
+        bothCompletedDates.sort((a, b) => new Date(b) - new Date(a));
+        
+        // Calculate consecutive days from the most recent completion backwards
+        let streak = 1; // Start with 1 for the most recent completion
+        const mostRecentDate = new Date(bothCompletedDates[0]);
+        
+        for (let i = 1; i < bothCompletedDates.length; i++) {
+            const currentDate = new Date(bothCompletedDates[i]);
+            const expectedDate = new Date(mostRecentDate);
+            expectedDate.setDate(mostRecentDate.getDate() - i);
+            
+            // Check if this date is exactly one day before the previous date
+            if (this.getDateKey(currentDate) === this.getDateKey(expectedDate)) {
+                streak++;
+            } else {
+                break; // Streak broken
+            }
+        }
+        
+        
+        return streak;
+    }
+
+    calculateIndividualStreak(user) {
+        // Get all dates where user completed challenges
+        const completedDates = Object.keys(user.dailyChallenges).filter(date => 
+            user.dailyChallenges[date]?.completed
+        );
+        
+        if (completedDates.length === 0) {
+            return 0;
+        }
+        
+        // Sort dates in descending order (most recent first)
+        completedDates.sort((a, b) => new Date(b) - new Date(a));
+        
+        const today = this.getTodayKey();
+        const yesterday = this.getDateKey(new Date(Date.now() - 24 * 60 * 60 * 1000));
+        
+        // Check if the most recent completion is today or yesterday
+        const mostRecentDate = completedDates[0];
+        if (mostRecentDate !== today && mostRecentDate !== yesterday) {
+            // Most recent completion is not today or yesterday, streak is 0
+            return 0;
+        }
+        
+        // Calculate consecutive days from the most recent completion backwards
+        let streak = 1; // Start with 1 for the most recent completion
+        const mostRecentDateObj = new Date(mostRecentDate);
+        
+        for (let i = 1; i < completedDates.length; i++) {
+            const currentDate = new Date(completedDates[i]);
+            const expectedDate = new Date(mostRecentDateObj);
+            expectedDate.setDate(mostRecentDateObj.getDate() - i);
+            
+            // Check if this date is exactly one day before the previous date
+            if (this.getDateKey(currentDate) === this.getDateKey(expectedDate)) {
+                streak++;
+            } else {
+                break; // Streak broken
+            }
+        }
+        
+        
+        return streak;
+    }
+
+    checkForMissedDays() {
+        // Define the start date: September 3rd, 2025
+        const startDate = new Date('2025-09-03');
+        const today = new Date();
+        const yesterday = new Date(today);
+        yesterday.setDate(today.getDate() - 1);
+        
+        // Check each user for missed days from September 3rd to yesterday
+        ['bilge', 'domenica'].forEach(userId => {
+            const user = this.data.users[userId];
+            let missedDays = 0;
+            
+            // Check each day from September 3rd to yesterday
+            const checkDate = new Date(startDate);
+            
+            while (checkDate <= yesterday) {
+                const checkDateKey = this.getDateKey(checkDate);
+                
+                // If this day is not completed and not already marked as missed
+                if (!user.dailyChallenges[checkDateKey]?.completed && 
+                    !user.dailyChallenges[checkDateKey]?.missed) {
+                    
+                    console.log(`${user.name} missed day: ${checkDateKey}`);
+                    
+                    // Mark as missed
+                    user.dailyChallenges[checkDateKey] = {
+                        completed: false,
+                        missed: true,
+                        timestamp: new Date().toISOString()
+                    };
+                    
+                    missedDays++;
+                }
+                
+                // Move to next day
+                checkDate.setDate(checkDate.getDate() + 1);
+            }
+            
+            // Update matcha owed count
+            if (missedDays > 0) {
+                user.totalMatchaOwed = (user.totalMatchaOwed || 0) + missedDays;
+                console.log(`${user.name} missed ${missedDays} days - now owes ${user.totalMatchaOwed} matcha(s)`);
+                
+                // Add to activity history
+                this.addActivity(user, `Missed ${missedDays} LeetCode challenge(s) from Sep 3rd to yesterday - owes ${missedDays} matcha!`, 'missed');
+            }
+        });
+        
+        // Save data if any changes were made
+        this.saveData();
+    }
+
+    updateUserCards() {
+        const bilge = this.data.users.bilge;
+        const domenica = this.data.users.domenica;
+        const today = this.getTodayKey();
+
+        console.log('Updating user cards with streaks:', {
+            bilge: bilge.currentStreak,
+            domenica: domenica.currentStreak
+        });
+
+        // Update Bilge's stats in the check-in card
+        const bilgeStreak = document.getElementById('bilgeStreak');
+        const bilgeSolved = document.getElementById('bilgeSolved');
+        const bilgeMatcha = document.getElementById('bilgeMatcha');
+        
+        if (bilgeStreak) {
+            bilgeStreak.textContent = bilge.currentStreak;
         }
         if (window.checkinManager) {
             window.checkinManager.checkForMissedDays();

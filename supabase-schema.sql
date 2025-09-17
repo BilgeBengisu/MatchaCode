@@ -1,6 +1,47 @@
 -- MatchaCode Database Schema for Supabase
 -- Run this in your Supabase SQL Editor
 
+--- DATABASE MIGRATION POINT ----
+
+CREATE TABLE users (
+  user_id VARCHAR(50) PRIMARY KEY,
+  username VARCHAR(50) NOT NULL UNIQUE,
+  password_hash VARCHAR(255),
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+INSERT INTO users (user_id, username)
+VALUES 
+  ('bilge', 'Bilge'),
+  ('domenica', 'Domenica');
+
+-- Create activities table ---
+
+CREATE TYPE activity_type AS ENUM (
+  'DAILY_COMPLETE',
+  'EXTRA_PROBLEM',
+  'MISSED',
+  'MATCHA_PAID'
+);
+
+CREATE TABLE activities(
+  activity_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id VARCHAR(50) REFERENCES users(user_id) ON DELETE CASCADE,
+  activity_type activity_type NOT NULL,
+  problem_title TEXT,
+  problem_level TEXT CHECK (problem_level IN ('easy', 'medium', 'hard')),
+  problem_status TEXT CHECK (problem_status IN ('solved', 'attempted')),
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+
+
+
+--- OLD DATABASE SCHEMA ----
+
+
+
 -- Create the users table
 CREATE TABLE users (
   user_id VARCHAR(50) PRIMARY KEY,
@@ -57,3 +98,5 @@ CREATE TRIGGER update_users_updated_at
     BEFORE UPDATE ON users 
     FOR EACH ROW 
     EXECUTE FUNCTION update_updated_at_column();
+
+
