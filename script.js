@@ -6,16 +6,16 @@ class MatchaCodeApp {
         this.data = {
             users: {
                 bilge: {
-                    user_old_id: 'bilge',
-                    username_old: 'Bilge',
+                    user_id: 'bilge',
+                    username: 'Bilge',
                     currentStreak: 0,
                     totalSolved: 0,
                     totalMatchaOwed: 0,
                     activityHistory: []
                 },
                 domenica: {
-                    user_old_id: 'domenica',
-                    username_old: 'Domenica',
+                    user_id: 'domenica',
+                    username: 'Domenica',
                     currentStreak: 0,
                     totalSolved: 0,
                     totalMatchaOwed: 0,
@@ -35,9 +35,9 @@ class MatchaCodeApp {
     // --- Data Management ---
     async loadData() {
         try {
-            const supabaseData = await window.matchaSupabaseAPI.getAllUsersOld(); 
-            if (supabaseData && supabaseData.users_old) {
-                this.data.users = supabaseData.users_old;
+            const supabaseData = await window.matchaSupabaseAPI.getAllUsers(); 
+            if (supabaseData && supabaseData.users) {
+                this.data.users = supabaseData.users;
             } else {
                 throw new Error('No data from Supabase');
             }
@@ -55,13 +55,13 @@ class MatchaCodeApp {
         try {
             for (const userId in this.data.users) {
                 const user = this.data.users[userId];
-                await window.matchaSupabaseAPI.updateStreakOld(
+                await window.matchaSupabaseAPI.updateStreak(
                     userId, 
                     user.currentStreak, 
                     user.totalMatchaOwed
                 );
             }
-            console.log('Data saved to users_old table');
+            console.log('Data saved to users table');
         } catch (error) {
             console.error('Error saving to Supabase, falling back to localStorage:', error);
             localStorage.setItem('matchacode_data', JSON.stringify(this.data));
@@ -72,8 +72,8 @@ class MatchaCodeApp {
         localStorage.removeItem('matchacode_data');
 
         this.data.users = {
-            bilge: { user_old_id: 'bilge', username_old: 'Bilge', currentStreak: 0, totalSolved: 0, totalMatchaOwed: 0, activityHistory: [] },
-            domenica: { user_old_id: 'domenica', username_old: 'Domenica', currentStreak: 0, totalSolved: 0, totalMatchaOwed: 0, activityHistory: [] }
+            bilge: { user_id: 'bilge', username: 'Bilge', currentStreak: 0, totalSolved: 0, totalMatchaOwed: 0, activityHistory: [] },
+            domenica: { user_id: 'domenica', username: 'Domenica', currentStreak: 0, totalSolved: 0, totalMatchaOwed: 0, activityHistory: [] }
         };
 
         this.saveData();
@@ -182,7 +182,7 @@ class MatchaCodeApp {
 
         Object.values(this.data.users).forEach(user => {
             user.activityHistory.forEach(entry => {
-                allActivityHistory.push({ ...entry, user: user.username_old });
+                allActivityHistory.push({ ...entry, user: user.username });
             });
         });
 
@@ -211,11 +211,11 @@ class MatchaCodeApp {
         const today = this.getTodayKey();
 
         if (userData.dailyChallenges?.[today]?.completed) {
-            alert(`${userData.username_old} has already completed today's challenge!`);
+            alert(`${userData.username} has already completed today's challenge!`);
             return;
         }
 
-        document.getElementById('authModalTitle').textContent = `Check in for ${userData.username_old}`;
+        document.getElementById('authModalTitle').textContent = `Check in for ${userData.username}`;
         document.getElementById('authModalMessage').textContent = `Enter the password to mark as complete today's challenge.`;
         document.getElementById('authPassword').value = '';
         document.getElementById('authModal').classList.remove('hidden');
@@ -248,9 +248,9 @@ class MatchaCodeApp {
         this.addActivity(user, 'Completed today\'s LeetCode challenge!', 'completed');
 
         try {
-            await window.matchaSupabaseAPI.updateChallengeOld(userId, today, true, new Date().toISOString());
-            await window.matchaSupabaseAPI.updateStreakOld(userId, user.currentStreak, user.totalMatchaOwed);
-            await window.matchaSupabaseAPI.addActivityOld(userId, 'Completed today\'s LeetCode challenge!', 'completed');
+            await window.matchaSupabaseAPI.updateChallenge(userId, today, true, new Date().toISOString());
+            await window.matchaSupabaseAPI.updateStreak(userId, user.currentStreak, user.totalMatchaOwed);
+            await window.matchaSupabaseAPI.addActivity(userId, 'Completed today\'s LeetCode challenge!', 'completed');
         } catch (error) {
             console.error('Error saving to Supabase:', error);
             this.saveData();
