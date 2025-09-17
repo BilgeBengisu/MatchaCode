@@ -291,7 +291,7 @@ class MatchaCodeApp {
                 if (!user.dailyChallenges[checkDateKey]?.completed && 
                     !user.dailyChallenges[checkDateKey]?.missed) {
                     
-                    console.log(`${user.name} missed day: ${checkDateKey}`);
+                    //console.log(`${user.username} missed day: ${checkDateKey}`);
                     
                     // Mark as missed
                     user.dailyChallenges[checkDateKey] = {
@@ -310,10 +310,10 @@ class MatchaCodeApp {
             // Update matcha owed count
             if (missedDays > 0) {
                 user.totalMatchaOwed = (user.totalMatchaOwed || 0) + missedDays;
-                console.log(`${user.name} missed ${missedDays} days - now owes ${user.totalMatchaOwed} matcha(s)`);
+                //console.log(`${user.username} missed ${missedDays} days - now owes ${user.totalMatchaOwed} matcha(s)`);
                 
                 // Add to activity history
-                this.addActivity(user, `Missed ${missedDays} LeetCode challenge(s) from Sep 3rd to yesterday - owes ${missedDays} matcha!`, 'missed');
+                this.addActivity(`${user.username} missed ${missedDays} LeetCode challenge(s) from Sep 3rd to yesterday - owes ${missedDays} matcha!`, 'missed');
             }
         });
         
