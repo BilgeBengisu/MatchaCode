@@ -1,9 +1,8 @@
-// MatchaCode - Daily LeetCode Challenge Tracker
-// Two-user system: Bilge and Domenica with authentication
+// script.js - Core app logic and initialization for MatchaCode
+// Main application class that coordinates all modules
 
 class MatchaCodeApp {
     constructor() {
-        this.pendingAction = null; // Stores the pending action (user, type)
         this.data = {
             users: {
                 bilge: {
@@ -24,14 +23,12 @@ class MatchaCodeApp {
                 }
             }
         };
-        
-        // Get password from environment configuration
-        this.accessPassword = window.MATCHACODE_CONFIG?.accessPassword;
     }
 
     async init() {
         await this.loadData();
         this.updateUI();
+        this.setupEventListeners();
     }
 
     // Data Management
@@ -146,417 +143,14 @@ class MatchaCodeApp {
         console.log('All data has been reset to default state');
     }
 
-    // UI Updates
+    // UI Updates - delegate to UIManager
     updateUI() {
-        this.updateStats();
-        this.updateUserCards();
-        this.updateCheckinCards();
-        this.updateActivityList();
-        this.updateDate();
-        this.checkForMissedDays();
-    }
-
-    updateStats() {
-        const bilge = this.data.users.bilge;
-        const domenica = this.data.users.domenica;
-        
-        // Calculate combined streak - only increases when both users complete on the same day
-        const combinedStreak = this.calculateCombinedStreak();
-        const totalSolved = bilge.totalSolved + domenica.totalSolved;
-        
-        // Calculate total matcha owed
-        const totalMatchaOwed = (bilge.totalMatchaOwed || 0) + (domenica.totalMatchaOwed || 0);
-
-        const totalStreakElement = document.getElementById('totalStreak');
-        const totalSolvedElement = document.getElementById('totalSolved');
-        const totalMatchaElement = document.getElementById('totalMatchaOwed');
-
-        if (totalStreakElement) {
-            totalStreakElement.textContent = combinedStreak;
+        if (window.uiManager) {
+            window.uiManager.updateUI();
         }
-        if (totalSolvedElement) {
-            totalSolvedElement.textContent = totalSolved;
+        if (window.checkinManager) {
+            window.checkinManager.checkForMissedDays();
         }
-        if (totalMatchaElement) {
-            totalMatchaElement.textContent = totalMatchaOwed;
-        }
-    }
-
-    calculateCombinedStreak() {
-        const bilge = this.data.users.bilge;
-        const domenica = this.data.users.domenica;
-        
-        // Get all dates where both users completed challenges
-        const bilgeDates = Object.keys(bilge.dailyChallenges).filter(date => 
-            bilge.dailyChallenges[date]?.completed
-        );
-        const domenicaDates = Object.keys(domenica.dailyChallenges).filter(date => 
-            domenica.dailyChallenges[date]?.completed
-        );
-        
-        // Find dates where both completed
-        const bothCompletedDates = bilgeDates.filter(date => domenicaDates.includes(date));
-        
-        if (bothCompletedDates.length === 0) {
-            return 0;
-        }
-        
-        // Sort dates in descending order (most recent first)
-        bothCompletedDates.sort((a, b) => new Date(b) - new Date(a));
-        
-        // Calculate consecutive days from the most recent completion backwards
-        let streak = 1; // Start with 1 for the most recent completion
-        const mostRecentDate = new Date(bothCompletedDates[0]);
-        
-        for (let i = 1; i < bothCompletedDates.length; i++) {
-            const currentDate = new Date(bothCompletedDates[i]);
-            const expectedDate = new Date(mostRecentDate);
-            expectedDate.setDate(mostRecentDate.getDate() - i);
-            
-            // Check if this date is exactly one day before the previous date
-            if (this.getDateKey(currentDate) === this.getDateKey(expectedDate)) {
-                streak++;
-            } else {
-                break; // Streak broken
-            }
-        }
-        
-        
-        return streak;
-    }
-
-    calculateIndividualStreak(user) {
-        // Get all dates where user completed challenges
-        const completedDates = Object.keys(user.dailyChallenges).filter(date => 
-            user.dailyChallenges[date]?.completed
-        );
-        
-        if (completedDates.length === 0) {
-            return 0;
-        }
-        
-        // Sort dates in descending order (most recent first)
-        completedDates.sort((a, b) => new Date(b) - new Date(a));
-        
-        const today = this.getTodayKey();
-        const yesterday = this.getDateKey(new Date(Date.now() - 24 * 60 * 60 * 1000));
-        
-        // Check if the most recent completion is today or yesterday
-        const mostRecentDate = completedDates[0];
-        if (mostRecentDate !== today && mostRecentDate !== yesterday) {
-            // Most recent completion is not today or yesterday, streak is 0
-            return 0;
-        }
-        
-        // Calculate consecutive days from the most recent completion backwards
-        let streak = 1; // Start with 1 for the most recent completion
-        const mostRecentDateObj = new Date(mostRecentDate);
-        
-        for (let i = 1; i < completedDates.length; i++) {
-            const currentDate = new Date(completedDates[i]);
-            const expectedDate = new Date(mostRecentDateObj);
-            expectedDate.setDate(mostRecentDateObj.getDate() - i);
-            
-            // Check if this date is exactly one day before the previous date
-            if (this.getDateKey(currentDate) === this.getDateKey(expectedDate)) {
-                streak++;
-            } else {
-                break; // Streak broken
-            }
-        }
-        
-        
-        return streak;
-    }
-
-    checkForMissedDays() {
-        // Define the start date: September 3rd, 2025
-        const startDate = new Date('2025-09-03');
-        const today = new Date();
-        const yesterday = new Date(today);
-        yesterday.setDate(today.getDate() - 1);
-        
-        // Check each user for missed days from September 3rd to yesterday
-        ['bilge', 'domenica'].forEach(userId => {
-            const user = this.data.users[userId];
-            let missedDays = 0;
-            
-            // Check each day from September 3rd to yesterday
-            const checkDate = new Date(startDate);
-            
-            while (checkDate <= yesterday) {
-                const checkDateKey = this.getDateKey(checkDate);
-                
-                // If this day is not completed and not already marked as missed
-                if (!user.dailyChallenges[checkDateKey]?.completed && 
-                    !user.dailyChallenges[checkDateKey]?.missed) {
-                    
-                    console.log(`${user.name} missed day: ${checkDateKey}`);
-                    
-                    // Mark as missed
-                    user.dailyChallenges[checkDateKey] = {
-                        completed: false,
-                        missed: true,
-                        timestamp: new Date().toISOString()
-                    };
-                    
-                    missedDays++;
-                }
-                
-                // Move to next day
-                checkDate.setDate(checkDate.getDate() + 1);
-            }
-            
-            // Update matcha owed count
-            if (missedDays > 0) {
-                user.totalMatchaOwed = (user.totalMatchaOwed || 0) + missedDays;
-                console.log(`${user.name} missed ${missedDays} days - now owes ${user.totalMatchaOwed} matcha(s)`);
-                
-                // Add to activity history
-                this.addActivity(user, `Missed ${missedDays} LeetCode challenge(s) from Sep 3rd to yesterday - owes ${missedDays} matcha!`, 'missed');
-            }
-        });
-        
-        // Save data if any changes were made
-        this.saveData();
-    }
-
-    updateUserCards() {
-        const bilge = this.data.users.bilge;
-        const domenica = this.data.users.domenica;
-        const today = this.getTodayKey();
-
-        console.log('Updating user cards with streaks:', {
-            bilge: bilge.currentStreak,
-            domenica: domenica.currentStreak
-        });
-
-        // Update Bilge's stats in the check-in card
-        const bilgeStreak = document.getElementById('bilgeStreak');
-        const bilgeSolved = document.getElementById('bilgeSolved');
-        const bilgeMatcha = document.getElementById('bilgeMatcha');
-        
-        if (bilgeStreak) {
-            bilgeStreak.textContent = bilge.currentStreak;
-        }
-        if (bilgeSolved) bilgeSolved.textContent = bilge.totalSolved;
-        if (bilgeMatcha) {
-            bilgeMatcha.textContent = bilge.totalMatchaOwed || 0;
-        }
-
-        // Update Domenica's stats in the check-in card
-        const domenicaStreak = document.getElementById('domenicaStreak');
-        const domenicaSolved = document.getElementById('domenicaSolved');
-        const domenicaMatcha = document.getElementById('domenicaMatcha');
-        
-        if (domenicaStreak) {
-            domenicaStreak.textContent = domenica.currentStreak;
-        }
-        if (domenicaSolved) domenicaSolved.textContent = domenica.totalSolved;
-        if (domenicaMatcha) {
-            domenicaMatcha.textContent = domenica.totalMatchaOwed || 0;
-        }
-    }
-
-    updateCheckinCards() {
-        const bilge = this.data.users.bilge;
-        const domenica = this.data.users.domenica;
-        const today = this.getTodayKey();
-
-        console.log('updateCheckinCards - Today:', today);
-        console.log('updateCheckinCards - Bilge completed:', bilge.dailyChallenges[today]?.completed);
-        console.log('updateCheckinCards - Domenica completed:', domenica.dailyChallenges[today]?.completed);
-
-        // Update Bilge's check-in card styling based on completion status
-        const bilgeCheckinCard = document.getElementById('bilgeCheckinCard');
-        const bilgeCheckinStatus = document.getElementById('bilgeCheckinStatus');
-        
-        console.log('Bilge elements found:', { card: !!bilgeCheckinCard, status: !!bilgeCheckinStatus });
-        
-        if (bilgeCheckinCard && bilgeCheckinStatus) {
-            if (bilge.dailyChallenges[today]?.completed) {
-                console.log('Updating Bilge card to completed state');
-                bilgeCheckinCard.style.borderColor = '#4CAF50';
-                bilgeCheckinCard.style.backgroundColor = '#f1f8e9';
-                bilgeCheckinStatus.textContent = 'Completed today\'s challenge! ✅';
-                bilgeCheckinStatus.className = 'user-checkin-status completed';
-            } else {
-                console.log('Updating Bilge card to not completed state');
-                bilgeCheckinCard.style.borderColor = '#e1e8ed';
-                bilgeCheckinCard.style.backgroundColor = '#f8f9fa';
-                bilgeCheckinStatus.textContent = 'Not checked in today';
-                bilgeCheckinStatus.className = 'user-checkin-status';
-            }
-        }
-
-        // Update Domenica's check-in card styling based on completion status
-        const domenicaCheckinCard = document.getElementById('domenicaCheckinCard');
-        const domenicaCheckinStatus = document.getElementById('domenicaCheckinStatus');
-        
-        console.log('Domenica elements found:', { card: !!domenicaCheckinCard, status: !!domenicaCheckinStatus });
-        
-        if (domenicaCheckinCard && domenicaCheckinStatus) {
-            if (domenica.dailyChallenges[today]?.completed) {
-                console.log('Updating Domenica card to completed state');
-                domenicaCheckinCard.style.borderColor = '#4CAF50';
-                domenicaCheckinCard.style.backgroundColor = '#f1f8e9';
-                domenicaCheckinStatus.textContent = 'Completed today\'s challenge! ✅';
-                domenicaCheckinStatus.className = 'user-checkin-status completed';
-            } else {
-                console.log('Updating Domenica card to not completed state');
-                domenicaCheckinCard.style.borderColor = '#e1e8ed';
-                domenicaCheckinCard.style.backgroundColor = '#f8f9fa';
-                domenicaCheckinStatus.textContent = 'Not checked in today';
-                domenicaCheckinStatus.className = 'user-checkin-status';
-            }
-        }
-    }
-
-    updateDate() {
-        const today = new Date();
-        const options = { 
-            weekday: 'long', 
-            year: 'numeric', 
-            month: 'long', 
-            day: 'numeric' 
-        };
-        const formattedDate = today.toLocaleDateString('en-US', options);
-        
-        const dateElement = document.getElementById('todayDate');
-        if (dateElement) {
-            dateElement.textContent = formattedDate;
-        }
-    }
-
-    updateActivityList() {
-        const activityList = document.getElementById('activityList');
-        const template = document.getElementById('activityItemTemplate');
-        const allActivityHistory = [];
-        
-        // Combine activity history from both users
-        Object.values(this.data.users).forEach(user => {
-            user.activityHistory.forEach(entry => {
-                allActivityHistory.push({
-                    ...entry,
-                    user: user.name
-                });
-            });
-        });
-
-        if (allActivityHistory.length === 0) {
-            // Show empty state (already in HTML)
-            const emptyState = activityList.querySelector('.empty-state');
-            if (emptyState) {
-                emptyState.style.display = 'block';
-            }
-            return;
-        }
-
-        // Hide empty state
-        const emptyState = activityList.querySelector('.empty-state');
-        if (emptyState) {
-            emptyState.style.display = 'none';
-        }
-
-        // Clear existing activity items
-        const existingItems = activityList.querySelectorAll('.activity-item');
-        existingItems.forEach(item => item.remove());
-
-        // Create activity items using template
-        const recentActivities = allActivityHistory
-            .slice(-3) // Show last 5 entries
-            .reverse();
-
-        recentActivities.forEach(entry => {
-            const clone = template.content.cloneNode(true);
-            const description = clone.querySelector('.item-description');
-            const date = clone.querySelector('.item-date');
-            
-            description.textContent = `${entry.user}: ${entry.description}`;
-            date.textContent = entry.date;
-            
-            activityList.appendChild(clone);
-        });
-    }
-
-    // Authentication and Actions
-    showAuthModal(user, actionType) {
-        this.pendingAction = { user, actionType };
-        
-        const userData = this.data.users[user];
-        const today = this.getTodayKey();
-        
-        // Check if already completed
-        if (userData.dailyChallenges[today]?.completed) {
-            alert(`${userData.name} has already completed today's challenge!`);
-            return;
-        }
-
-        const actionText = 'mark as complete';
-        document.getElementById('authModalTitle').textContent = `Check in for ${userData.name}`;
-        document.getElementById('authModalMessage').textContent = `Enter the password to ${actionText} today's challenge.`;
-        document.getElementById('authPassword').value = '';
-        
-        document.getElementById('authModal').classList.remove('hidden');
-        document.getElementById('authPassword').focus();
-        console.log('Auth modal should be visible now');
-    }
-
-    authenticate(password) {
-        return password === this.accessPassword;
-    }
-
-    executePendingAction() {
-        if (!this.pendingAction) {
-            return;
-        }
-        
-        const { user, actionType } = this.pendingAction;
-        
-        if (actionType === 'complete') {
-            this.markChallengeComplete(user).then(() => {
-                // Challenge completion saved successfully
-            }).catch(error => {
-            console.error('Error completing challenge:', error);
-        });
-        }
-        
-        this.pendingAction = null;
-    }
-
-    async markChallengeComplete(userId) {
-        const user = this.data.users[userId];
-        const today = this.getTodayKey();
-        
-        if (user.dailyChallenges[today]?.completed) {
-            return; // Already completed
-        }
-
-        // Mark as completed
-        user.dailyChallenges[today] = {
-            completed: true,
-            timestamp: new Date().toISOString()
-        };
-
-        // Update stats
-        user.totalSolved++;
-        user.currentStreak = this.calculateIndividualStreak(user);
-
-        // Add to activity
-        this.addActivity(user, 'Completed today\'s LeetCode challenge!', 'completed');
-
-        // Save to Supabase
-        try {
-            await window.matchaSupabaseAPI.updateChallenge(userId, today, true, new Date().toISOString());
-            await window.matchaSupabaseAPI.updateStreak(userId, user.currentStreak, user.totalMatchaOwed);
-            await window.matchaSupabaseAPI.addActivity(userId, 'Completed today\'s LeetCode challenge!', 'completed');
-        } catch (error) {
-            console.error('Error saving to Supabase:', error);
-            // Fallback to localStorage
-            this.saveData();
-        }
-        this.updateUI();
-        this.showSuccessModal();
     }
 
     // Helper Methods
@@ -577,69 +171,9 @@ class MatchaCodeApp {
         return `${year}-${month}-${day}`;
     }
 
-    addActivity(user, description, type) {
-        user.activityHistory.push({
-            description,
-            type,
-            date: new Date().toLocaleDateString('en-US', {
-                month: 'short',
-                day: 'numeric',
-                hour: '2-digit',
-                minute: '2-digit'
-            })
-        });
-    }
-
-    // Modal Functions
-    showSuccessModal() {
-        document.getElementById('successModal').classList.remove('hidden');
-    }
-
-    closeAuthModal() {
-        document.getElementById('authModal').classList.add('hidden');
-        // Don't clear pendingAction here - let executePendingAction handle it
-    }
-
     // Event Listeners
     setupEventListeners() {
         console.log('Setting up event listeners...');
-        
-        // Authentication form
-        const authForm = document.getElementById('authForm');
-        if (authForm) {
-            authForm.addEventListener('submit', (e) => {
-                e.preventDefault();
-                console.log('Auth form submitted');
-                const password = document.getElementById('authPassword').value;
-                console.log('Password entered:', password);
-                
-                if (this.authenticate(password)) {
-                    console.log('Authentication successful');
-                    this.closeAuthModal();
-                    this.executePendingAction();
-                } else {
-                    console.log('Authentication failed');
-                    alert('Incorrect password! Hint: It\'s the drink that motivates us to code! 🍵');
-                    document.getElementById('authPassword').value = '';
-                    document.getElementById('authPassword').focus();
-                }
-            });
-        } else {
-            console.error('Auth form not found!');
-        }
-
-        // Close modals on outside click
-        document.getElementById('successModal').addEventListener('click', (e) => {
-            if (e.target.id === 'successModal') {
-                window.closeModal();
-            }
-        });
-
-        document.getElementById('authModal').addEventListener('click', (e) => {
-            if (e.target.id === 'authModal') {
-                this.closeAuthModal();
-            }
-        });
 
         // Add storage event listener for tab synchronization
         window.addEventListener('storage', (e) => {
@@ -654,27 +188,8 @@ class MatchaCodeApp {
 
 // Global functions for HTML onclick handlers
 function showAuthModal(user, actionType) {
-    window.matchaApp.showAuthModal(user, actionType);
-}
-
-function closeAuthModal() {
-    window.matchaApp.closeAuthModal();
-}
-
-// About modal functions
-function showAboutModal() {
-    const modal = document.getElementById('aboutModal');
-    if (modal) {
-        modal.classList.remove('hidden');
-        console.log('About modal opened');
-    }
-}
-
-function closeAboutModal() {
-    const modal = document.getElementById('aboutModal');
-    if (modal) {
-        modal.classList.add('hidden');
-        console.log('About modal closed');
+    if (window.authManager) {
+        window.authManager.showAuthModal(user, actionType);
     }
 }
 
@@ -682,14 +197,6 @@ function closeAboutModal() {
 document.addEventListener('DOMContentLoaded', async () => {
     window.matchaApp = new MatchaCodeApp();
     await window.matchaApp.init();
-    
-    // Setup event listeners after DOM is ready
-    window.matchaApp.setupEventListeners();
-    
-    // Global modal close function
-    window.closeModal = () => {
-        document.getElementById('successModal').classList.add('hidden');
-    };
     
     // Add some fun easter eggs
     document.addEventListener('keydown', (e) => {

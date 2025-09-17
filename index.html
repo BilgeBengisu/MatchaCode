@@ -4,8 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MatchaCode - Daily LeetCode Challenge</title>
-    <script src="config.js"></script>
     <link rel="stylesheet" href="styles.css">
+    <script src="config.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
@@ -103,24 +103,7 @@
                                         <i class="fas fa-calendar-day"></i>
                                         Daily Challenge
                                     </h2>
-                                    <div class="date-display" id="todayDate">
-                                        <script>
-                                            document.addEventListener('DOMContentLoaded', function() {
-                                                const today = new Date();
-                                                const options = { 
-                                                    weekday: 'long', 
-                                                    year: 'numeric', 
-                                                    month: 'long', 
-                                                    day: 'numeric' 
-                                                };
-                                                const formattedDate = today.toLocaleDateString('en-US', options);
-                                                const dateElement = document.getElementById('todayDate');
-                                                if (dateElement) {
-                                                    dateElement.textContent = formattedDate;
-                                                }
-                                            });
-                                        </script>
-                                    </div>
+                                    <div class="date-display" id="todayDate"></div>
                                 </div>
                                 
                                 <div class="challenge-users">
@@ -268,6 +251,10 @@
     </footer>
 
     <script src="supabase-client.js"></script>
+    <script src="modals.js"></script>
+    <script src="checkins.js"></script>
+    <script src="auth.js"></script>
+    <script src="ui.js"></script>
     <script src="script.js"></script>
 </body>
 </html>
