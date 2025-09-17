@@ -135,11 +135,6 @@ The app is built with vanilla JavaScript, making it easy to extend:
 
 ## 🚀 Deployment
 
-### Netlify (Recommended)
-1. Push your code to GitHub
-2. Connect your repository to Netlify
-3. Deploy with zero configuration!
-
 ### Vercel
 1. Install Vercel CLI: `npm i -g vercel`
 2. Run `vercel` in the project directory
