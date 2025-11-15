@@ -5,6 +5,8 @@
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL
 const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY
 
+import { createClient } from '@supabase/supabase-js';
+
 /**
  * Create a simple Supabase client using fetch API
  */
