@@ -37,8 +37,8 @@ class SupabaseClient {
             ...options.headers
         };
 
-        console.log('Making Supabase request to:', url);
-        console.log('Headers:', headers);
+        // console.log('Making Supabase request to:', url);
+        // console.log('Headers:', headers);
 
         try {
             const response = await fetch(url, {
@@ -46,8 +46,8 @@ class SupabaseClient {
                 headers
             });
 
-            console.log('Response status:', response.status);
-            console.log('Response headers:', Object.fromEntries(response.headers.entries()));
+            // console.log('Response status:', response.status);
+            // console.log('Response headers:', Object.fromEntries(response.headers.entries()));
 
             if (!response.ok) {
                 // Try to get error details
