@@ -4,8 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MatchaCode - Daily LeetCode Challenge</title>
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍵</text></svg>">
     <link rel="stylesheet" href="styles.css">
-    <script src="config.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
@@ -106,70 +106,8 @@
                                     <div class="date-display" id="todayDate"></div>
                                 </div>
                                 
-                                <div class="challenge-users">
-                                    <div class="user-checkin-card" id="bilgeCheckinCard">
-                                        <div class="user-checkin-header">
-                                            <div class="user-avatar bilge">
-                                                <img src="bilge_profile.png" alt="Bilge" class="profile-image">
-                                            </div>
-                                            <div class="user-checkin-info">
-                                                <h4>Bilge</h4>
-                                                <p class="user-checkin-status" id="bilgeCheckinStatus">Not checked in today</p>
-                                            </div>
-                                        </div>
-                                        <div class="user-stats">
-                                            <div class="user-stat">
-                                                <span class="stat-number" id="bilgeStreak">0</span>
-                                                <span class="stat-label">Day Streak</span>
-                                            </div>
-                                            <div class="user-stat">
-                                                <span class="stat-number" id="bilgeSolved">0</span>
-                                                <span class="stat-label">Solved</span>
-                                            </div>
-                                            <div class="user-stat">
-                                                <span class="stat-number" id="bilgeMatcha">0</span>
-                                                <span class="stat-label">Matcha Owed</span>
-                                            </div>
-                                        </div>
-                                        <div class="user-checkin-actions">
-                                            <button class="btn-success" onclick="showAuthModal('bilge', 'complete')">
-                                                <i class="fas fa-check"></i>
-                                                Mark Complete
-                                            </button>
-                                        </div>
-                                    </div>
-
-                                    <div class="user-checkin-card" id="domenicaCheckinCard">
-                                        <div class="user-checkin-header">
-                                            <div class="user-avatar domenica">
-                                                <img src="domenica_profile.png" alt="Domenica" class="profile-image">
-                                            </div>
-                                            <div class="user-checkin-info">
-                                                <h4>Domenica</h4>
-                                                <p class="user-checkin-status" id="domenicaCheckinStatus">Not checked in today</p>
-                                            </div>
-                                        </div>
-                                        <div class="user-stats">
-                                            <div class="user-stat">
-                                                <span class="stat-number" id="domenicaStreak">0</span>
-                                                <span class="stat-label">Day Streak</span>
-                                            </div>
-                                            <div class="user-stat">
-                                                <span class="stat-number" id="domenicaSolved">0</span>
-                                                <span class="stat-label">Solved</span>
-                                            </div>
-                                            <div class="user-stat">
-                                                <span class="stat-number" id="domenicaMatcha">0</span>
-                                                <span class="stat-label">Matcha Owed</span>
-                                            </div>
-                                        </div>
-                                        <div class="user-checkin-actions">
-                                            <button class="btn-success" onclick="showAuthModal('domenica', 'complete')">
-                                                <i class="fas fa-check"></i>
-                                                Mark Complete
-                                            </button>
-                                        </div>
-                                    </div>
+                                <div class="challenge-users" id="challengeUsers">
+                                    <!-- User cards will be dynamically generated here -->
                                 </div>
                             </div>
                         </section>
@@ -228,7 +166,7 @@
             </div>
             <h3>Welcome to MatchaCode!</h3>
             <div class="about-content">
-                <p><strong>Purpose:</strong> A fun and motivating way for Bilge and Domenica to track their daily LeetCode challenges together!</p>
+                <p><strong>Purpose:</strong> A fun and motivating way to track daily LeetCode challenges together!</p>
                 
                 <p><strong>How it works:</strong></p>
                 <ul>
@@ -247,14 +185,9 @@
 
     <!-- Footer -->
     <footer class="app-footer">
-        <p>powered by matcha and motivation © 2025 Bilge Akyol</p>
+        <p>powered by matcha and motivation © 2025</p>
     </footer>
 
-    <script src="supabase-client.js"></script>
-    <script src="modals.js"></script>
-    <script src="checkins.js"></script>
-    <script src="auth.js"></script>
-    <script src="ui.js"></script>
-    <script src="script.js"></script>
+    <script type="module" src="src/main.js"></script>
 </body>
 </html>
