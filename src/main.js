@@ -1,14 +1,10 @@
 // Import Supabase client
 import './config/supabaseClient.js';
+import supabaseClient from './config/supabaseClient.js';
 
 // Main application entry point
 document.addEventListener('DOMContentLoaded', async function() {
     console.log('MatchaCode application loaded successfully!');
-    console.log('testing supabase function');
-    const { data, error } = await supabase.rpc('say_hello', {
-        name: 'Bilge'
-    });
-    console.log(data, error);
     
     // Test the getAllUsers function from SupabaseClient
     try {
