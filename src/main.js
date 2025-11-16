@@ -13,8 +13,9 @@ document.addEventListener('DOMContentLoaded', async function() {
     console.log('MatchaCode application loaded successfully!');
 
     // today's date display
-    const todayKey = formatDateForDisplay(getTodayKey());
-    document.getElementById('todayDate').innerText = todayKey;
+    const todayDate = formatDateForDisplay(getTodayKey());
+    console.log(todayDate)
+    document.getElementById('todayDate').innerText = todayDate;
     
     // problem solved display
     //console.log(await supabase.rpc('total_problem_count'));

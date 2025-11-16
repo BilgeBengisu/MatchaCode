@@ -2,7 +2,6 @@ import { getTodayKey, formatDateForDisplay } from "../utils/dateUtils.js";
 
 export async function renderUserCheckinCards(supabase) {
     const container = document.getElementById("challengeUsers");
-    document.getElementById('todayDate').innerText = "test"; // Clear previous render
 
     const todayKey = getTodayKey();  // "2025-11-15" format
 
