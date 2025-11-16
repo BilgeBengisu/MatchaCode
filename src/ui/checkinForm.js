@@ -24,17 +24,21 @@ export async function renderUserCheckinCards(supabase) {
         card.classList.add("user-checkin-card");
         if (checkedIn) card.classList.add("completed");
 
-        card.innerHTML = `
+        let user_checkin_header = `
             <div class="user-checkin-header">
                 <div class="user-avatar">
                     <img src="src/public/${user.user_id}_profile.png" class="profile-image" />
                 </div>
                 <div class="user-checkin-info">
                     <h4>${user.username}</h4>
-                    <p class="user-checkin-status completed">To be coded</p>
+                    <div class="checkin-status ${checkedIn ? 'checked-in' : 'not-checked-in'}">
+                        ${checkedIn ? 'Checked In Today' : 'Not Checked In'}
+                    </div>
                 </div>
             </div>
+        `;
 
+        let user_stats = `
             <div class="user-stats">
                 <div class="user-stat">
                     <div class="stat-number">${user.streak}</div>
@@ -49,7 +53,9 @@ export async function renderUserCheckinCards(supabase) {
                     <div class="stat-label">Matcha Owed</div>
                 </div>
             </div>
+        `;
 
+        let user_checkin_actions = `
             <div class="user-checkin-actions">
                 <button class="btn-success">
                     Check In
@@ -59,7 +65,7 @@ export async function renderUserCheckinCards(supabase) {
                 </button>
             </div>
         `;
-
+        card.innerHTML = user_checkin_header + user_stats + user_checkin_actions;
         container.appendChild(card);
     });
 
