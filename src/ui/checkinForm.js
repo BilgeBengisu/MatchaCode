@@ -41,11 +41,11 @@ export async function renderUserCheckinCards(supabase) {
                     <div class="stat-label">Streak</div>
                 </div> 
                 <div class="user-stat">
-                    <div class="stat-number">todo</div>
+                    <div class="stat-number">${user.problems_solved}</div>
                     <div class="stat-label">Problems Solved</div>
                 </div> 
                 <div class="user-stat">
-                    <div class="stat-number">todo</div>
+                    <div class="stat-number">${user.matcha_owed}</div>
                     <div class="stat-label">Matcha Owed</div>
                 </div>
             </div>
