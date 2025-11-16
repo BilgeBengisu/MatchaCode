@@ -402,12 +402,9 @@ body {
     color: white;
 }
 
-.user-avatar.bilge {
-    background: linear-gradient(135deg, #667eea, #764ba2);
-}
 
-.user-avatar.domenica {
-    background: linear-gradient(135deg, #f093fb, #f5576c);
+.user-avatar {
+    background: linear-gradient(135deg, green, lightgreen);
 }
 
 /* Profile image styles */
