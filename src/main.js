@@ -3,6 +3,7 @@ import supabaseClient from './config/supabaseClient.js';
 import { createClient } from '@supabase/supabase-js';
 import { getTodayKey, formatDateForDisplay } from './utils/dateUtils.js';
 import { renderUserCheckinCards } from './ui/checkinForm.js';
+import { displayDashboard } from './ui/dashboard.js';
 
 
 const supabase = await createClient(import.meta.env.VITE_SUPABASE_URL, import.meta.env.VITE_SUPABASE_ANON_KEY);
@@ -16,6 +17,10 @@ document.addEventListener('DOMContentLoaded', async function() {
     const todayDate = formatDateForDisplay(getTodayKey());
     console.log(todayDate)
     document.getElementById('todayDate').innerText = todayDate;
+
+    // *** dashboard
+    // combined streak display
+    await displayDashboard(supabase);
     
     // problem solved display
     //console.log(await supabase.rpc('total_problem_count'));
@@ -25,7 +30,6 @@ document.addEventListener('DOMContentLoaded', async function() {
     }
 
     // Render user check-in cards
-    console.log("Rendering user check-in cards...");
     await renderUserCheckinCards(supabase);
 
     // displaying daily checkin for users
