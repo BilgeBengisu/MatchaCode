@@ -21,13 +21,6 @@ document.addEventListener('DOMContentLoaded', async function() {
     // *** dashboard
     // combined streak display
     await displayDashboard(supabase);
-    
-    // problem solved display
-    //console.log(await supabase.rpc('total_problem_count'));
-    const {data, error} = await supabase.rpc('total_problem_count');
-    if (data) {
-        document.getElementById('totalSolved').innerText = data;
-    }
 
     // Render user check-in cards
     await renderUserCheckinCards(supabase);
