@@ -40,6 +40,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             if (data?.password == password) {
                 console.log("Password verified for user:", userId);
                 // Perform check-in logic here
+                
                 closeAuthModal();
             }
             else {
