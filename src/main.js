@@ -2,7 +2,7 @@
 import supabaseClient from './config/supabaseClient.js';
 import { createClient } from '@supabase/supabase-js';
 import { getTodayKey, formatDateForDisplay } from './utils/dateUtils.js';
-import { renderUserCheckinCards } from './ui/checkinForm.js';
+import { renderUserCheckinCards, openAuthModal, closeAuthModal } from './ui/checkinForm.js';
 import { displayDashboard } from './ui/dashboard.js';
 
 
@@ -24,6 +24,22 @@ document.addEventListener('DOMContentLoaded', async function() {
 
     // Render user check-in cards
     await renderUserCheckinCards(supabase);
+
+    // Attach listeners for auth modal cancel and form submit (these elements exist in index.html)
+    const authCancel = document.querySelector('#authModal .btn-secondary');
+    if (authCancel) authCancel.addEventListener('click', () => closeAuthModal());
+
+    const authForm = document.getElementById('authForm');
+    if (authForm) {
+        authForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const password = document.getElementById('authPassword').value;
+            const userId = document.getElementById('authModal')?.dataset?.user;
+            console.log('Authenticating checkin for user:', userId);
+            // TODO: verify password and perform check-in via Supabase here
+            closeAuthModal();
+        });
+    }
 
     // displaying daily checkin for users
     // gettting the users

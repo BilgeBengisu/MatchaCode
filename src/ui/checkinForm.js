@@ -57,10 +57,10 @@ export async function renderUserCheckinCards(supabase) {
 
         let user_checkin_actions = `
             <div class="user-checkin-actions">
-                <button class="btn-success">
+                <button class="btn-success checkin-btn" data-user="${user.user_id}">
                     Check In
                 </button>
-                <button class="btn-success">
+                <button class="btn-success buy-matcha-btn" data-user="${user.user_id}">
                     Buy Matcha
                 </button>
             </div>
@@ -76,4 +76,16 @@ export async function renderUserCheckinCards(supabase) {
             openAuthModal(userId);
         });
     });
+}
+
+export const openAuthModal = (userId) => {
+    const modal = document.getElementById("authModal");
+    modal.classList.remove("hidden");
+    modal.dataset.user = userId;
+}
+
+export const closeAuthModal = () => {
+    const modal = document.getElementById("authModal");
+    modal.classList.add("hidden");
+    modal.dataset.user = "";
 }
