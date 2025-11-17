@@ -37,7 +37,16 @@ document.addEventListener('DOMContentLoaded', async function() {
             const userId = document.getElementById('authModal')?.dataset?.user;
             console.log('Authenticating checkin for user:', userId);
             // TODO: verify password and perform check-in via Supabase here
-            closeAuthModal();
+            if (userId.password == password) {
+                console.log("Password verified for user:", userId);
+                // Perform check-in logic here
+                closeAuthModal();
+            }
+            else {
+                document.getElementById("authModalMessage").style.color = "red";
+                document.getElementById("authModalMessage").textContent = "Incorrect password. Please try again.";
+                console.log("Password incorrect for user:", userId);
+            }
         });
     }
 
