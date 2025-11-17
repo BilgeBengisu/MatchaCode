@@ -35,9 +35,9 @@ document.addEventListener('DOMContentLoaded', async function() {
             e.preventDefault();
             const password = document.getElementById('authPassword').value;
             const userId = document.getElementById('authModal')?.dataset?.user;
-            console.log('Authenticating checkin for user:', userId);
+            const {data, error} = await supabase.from('users').select('password').eq('user_id', userId).single();
             // TODO: verify password and perform check-in via Supabase here
-            if (userId.password == password) {
+            if (data?.password == password) {
                 console.log("Password verified for user:", userId);
                 // Perform check-in logic here
                 closeAuthModal();
