@@ -25,8 +25,6 @@ export async function renderUserCheckinCards() {
             .eq('solved', true)
             .eq('user_id', user.user_id);
 
-        console.log(count);
-
         const checkedIn = user.last_checkin === todayKey;
 
         const card = document.createElement("div");
@@ -109,10 +107,35 @@ export const closeAuthModal = () => {
     modal.dataset.user = "";
 }
 
-export const openMatchaModal = (userId) => {
+export const openMatchaModal = async (userId) => {
     const modal = document.getElementById("matchaModal");
     modal.classList.remove("hidden");
     modal.dataset.user = userId;
+
+    // Fetch owed matcha dynamically
+    const { data, error } = await supabase
+        .from('users')
+        .select('matcha_owed')
+        .eq('user_id', userId)
+        .single();
+
+    const msg = document.getElementById('matchaModalMessage');
+
+    if (error) {
+        msg.textContent = "Could not load matcha data.";
+        msg.style.color = "red";
+        return;
+    }
+
+    if (data.matcha_owed == 0) {
+        msg.textContent = "You don't owe any matcha!";
+        msg.style.color = "green";
+        document.getElementById('matchaOweForm').classList.add("hidden");
+    } else {
+        msg.textContent = `You owe ${data.matcha_owed} matcha(s).`;
+        msg.style.color = "black";
+        document.getElementById('matchaOweForm').classList.remove("hidden");
+    }
 }
 
 export const closeMatchaModal = () => {
@@ -150,10 +173,6 @@ async function attachMatchaModalListeners(supabase) {
     const matchaCancel = document.querySelector('#matchaModal .btn-secondary');
     if (matchaCancel) matchaCancel.addEventListener('click', () => closeMatchaModal());
 
-    const matchaOwe = await supabase.from('users').select('matcha_owed').eq('user_id', userId).single();
-    
-    document.getElementById('matchaModalMessage').textContent = "You owe " + matchaOwe.data + " matcha(s).";
-
     authForm.addEventListener('confirmBuyMatcha', async (e) => {
         e.preventDefault();
         const password = document.getElementById('matchaAuthPassword').value;
@@ -189,7 +208,7 @@ async function attachMatchaModalListeners(supabase) {
             document.getElementById("authModalMessage").textContent = "Incorrect password. Please try again.";
             console.log("Password incorrect for user:", userId);
         }
-        });
+    });
 };
 
 async function attachAuthModalListeners(supabase) {
