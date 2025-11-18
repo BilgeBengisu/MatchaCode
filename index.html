@@ -183,6 +183,33 @@
         </div>
     </div>
 
+    <!-- Authentication Modal -->
+    <div id="matchaModal" class="modal hidden">
+        <div class="modal-content">
+            <div class="modal-icon">
+                <i class="fa-solid fa-mug-hot"></i>
+            </div>
+            <h3 id="matchaModalTitle">Buy a Matcha 🍵</h3>
+            <p id="matchaModalMessage">You owe the user a matcha!</p>
+            <div class="input-group">
+                <i class="fa-solid fa-mug-hot"></i>
+                <input type="number" id="matchaQuantity" placeholder="Number of matchas" min="1" value="1">
+            </div>
+            <p id="matchaAuthModalMessage">Enter the password to check in for this user.</p>
+                <div class="input-group">
+                    <i class="fa-solid fa-mug-hot"></i>
+                    <input type="password" id="matchaAuthPassword" placeholder="Enter password" required>
+                </div>
+            <div class="auth-actions">
+                <button type="button" class="btn-secondary">Cancel</button>
+                <button type="button" class="btn-primary">
+                    <i class="fas fa-check"></i>
+                    Buy Matcha
+                </button>
+            </div>
+        </div>
+    </div>
+
     <!-- About Modal -->
     <div id="aboutModal" class="modal hidden">
         <div class="modal-content">

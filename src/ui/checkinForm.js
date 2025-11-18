@@ -78,8 +78,16 @@ export async function renderUserCheckinCards() {
         });
     });
 
+    document.querySelectorAll(".buy-matcha-btn").forEach(btn => {
+        btn.addEventListener("click", async (e) => {
+            const userId = e.target.dataset.user;
+            openMatchaModal(userId);
+        });
+    });
+
     activityTypeListener();
     attachAuthModalListeners(supabase);
+    attachMatchaModalListeners(supabase);
 }
 
 export const openAuthModal = (userId) => {
@@ -90,6 +98,18 @@ export const openAuthModal = (userId) => {
 
 export const closeAuthModal = () => {
     const modal = document.getElementById("authModal");
+    modal.classList.add("hidden");
+    modal.dataset.user = "";
+}
+
+export const openMatchaModal = (userId) => {
+    const modal = document.getElementById("matchaModal");
+    modal.classList.remove("hidden");
+    modal.dataset.user = userId;
+}
+
+export const closeMatchaModal = () => {
+    const modal = document.getElementById("matchaModal");
     modal.classList.add("hidden");
     modal.dataset.user = "";
 }
@@ -116,6 +136,53 @@ export const activityTypeListener = () => {
             solvedInput.value = "";
         }
     });
+};
+
+async function attachMatchaModalListeners(supabase) {
+    // Attach listeners for matcha modal cancel and form submit (these elements exist in index.html)
+    const matchaCancel = document.querySelector('#matchaModal .btn-secondary');
+    if (matchaCancel) matchaCancel.addEventListener('click', () => closeMatchaModal());
+
+    const matchaOwe = await supabase.from('users').select('matcha_owed').eq('user_id', userId).single();
+    
+    document.getElementById('matchaModalMessage').textContent = "You owe " + matchaOwe.data + " matcha(s).";
+
+    authForm.addEventListener('confirmBuyMatcha', async (e) => {
+        e.preventDefault();
+        const password = document.getElementById('matchaAuthPassword').value;
+        const userId = document.getElementById('matchaModal')?.dataset?.user;
+        const {data, error} = await supabase.from('users').select('*').eq('user_id', userId).single();
+        const user = data;
+        // TODO: verify password and perform check-in via Supabase here
+        if (user?.password == password) {
+            // Perform check-in logic here
+
+            console.log("Activity data for check-in:", activity);
+            if (user.matcha_owed > 0) {
+                const { data, error } = await supabase.rpc('decrement_matcha_owed', { p_user_id: userId });
+                if (error) console.error("Failed to decrement matcha:", error);
+            }
+
+            const activityType = document.getElementById("activityType").value;
+            const { data, error } = await supabase.from('checkins').insert([
+                {
+                    user_id: user.user_id,
+                    checkin_activity: activityType,
+                    completed: true,
+                    activity_id: activity.id,
+                }
+            ])
+            .select()
+            .maybeSingle();
+
+            closeAuthModal();
+        }
+        else {
+            document.getElementById("authModalMessage").style.color = "red";
+            document.getElementById("authModalMessage").textContent = "Incorrect password. Please try again.";
+            console.log("Password incorrect for user:", userId);
+        }
+        });
 };
 
 async function attachAuthModalListeners(supabase) {
@@ -214,3 +281,4 @@ async function handleCheckin(user_id) {
 
     return result;
 };
+
