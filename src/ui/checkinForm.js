@@ -18,13 +18,20 @@ export async function renderUserCheckinCards() {
     }
 
     // 2. Render each user card
-    users.forEach(user => {
+    await Promise.all(users.map(async (user) => {
+        const { count, error } = await supabase
+            .from('problems')
+            .select('*', { count: 'exact', head: true })  // <-- head:true prevents returning all rows
+            .eq('solved', true)
+            .eq('user_id', user.user_id);
+
+        console.log(count);
+
         const checkedIn = user.last_checkin === todayKey;
 
         const card = document.createElement("div");
         card.classList.add("user-checkin-card");
         if (checkedIn) card.classList.add("completed");
-
         let user_checkin_header = `
             <div class="user-checkin-header">
                 <div class="user-avatar">
@@ -46,7 +53,7 @@ export async function renderUserCheckinCards() {
                     <div class="stat-label">Streak</div>
                 </div> 
                 <div class="user-stat">
-                    <div class="stat-number">${user.problems_solved}</div>
+                    <div class="stat-number">${count}</div>
                     <div class="stat-label">Problems Solved</div>
                 </div> 
                 <div class="user-stat">
@@ -68,7 +75,7 @@ export async function renderUserCheckinCards() {
         `;
         card.innerHTML = user_checkin_header + user_stats + user_checkin_actions;
         container.appendChild(card);
-    });
+    }));
 
     // 3. Bind event listeners for "Check In" buttons
     document.querySelectorAll(".checkin-btn").forEach(btn => {
