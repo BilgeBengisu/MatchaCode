@@ -98,20 +98,27 @@ export const activityTypeListener = () => {
     const activityType = document.getElementById("activityType");
     const levelContainer = document.getElementById("levelContainer");
     const levelInput = document.getElementById("level");
+    const solvedContainer = document.getElementById("solvedContainer");
+    const solvedInput = document.getElementById("solved");
 
     activityType.addEventListener("change", () => {
         if (activityType.value === "problem") {
             levelContainer.style.display = "block";  // Show Level
             levelInput.required = true;
+            solvedContainer.style.display = "block";  // Show Solved
+            solvedInput.required = true;
         } else {
             levelContainer.style.display = "none";   // Hide Level
             levelInput.required = false;
             levelInput.value = "";
+            solvedContainer.style.display = "none";   // Hide Solved
+            solvedInput.required = false;
+            solvedInput.value = "";
         }
     });
 };
 
-export const attachAuthModalListeners = (supabase) => {
+async function attachAuthModalListeners(supabase) {
     // Attach listeners for auth modal cancel and form submit (these elements exist in index.html)
     const authCancel = document.querySelector('#authModal .btn-secondary');
     if (authCancel) authCancel.addEventListener('click', () => closeAuthModal());
@@ -122,11 +129,16 @@ export const attachAuthModalListeners = (supabase) => {
             e.preventDefault();
             const password = document.getElementById('authPassword').value;
             const userId = document.getElementById('authModal')?.dataset?.user;
-            const {data, error} = await supabase.from('users').select('password').eq('user_id', userId).single();
+            const {data, error} = await supabase.from('users').select('*').eq('user_id', userId).single();
+            console.log("Auth query data:", data, "error:", error);
+            const user = data;
             // TODO: verify password and perform check-in via Supabase here
-            if (data?.password == password) {
-                console.log("Password verified for user:", userId);
+            if (user?.password == password) {
                 // Perform check-in logic here
+
+                const activity = await getActivityData(user.user_id);
+                console.log("Activity data for check-in:", activity);
+
                 closeAuthModal();
             }
             else {
@@ -136,4 +148,48 @@ export const attachAuthModalListeners = (supabase) => {
             }
         });
     }
+};
+
+async function getActivityData(user_id) {
+    const activityType = document.getElementById("activityType").value;
+
+    let result = null;
+
+    if (activityType == "problem") {
+        const topic = document.getElementById("topic").value;
+        const level = document.getElementById("level").value.toLowerCase();
+        const status = document.getElementById("solved").value.toLowerCase();
+        const solved = status === "Completed" ? true : false;
+
+        const { data, error } = await supabase.from('problems').insert([
+            {
+                user_id,
+                topic,
+                difficulty: level,
+                solved
+            }
+        ])
+        .select()
+        .single();
+
+        console.log("Problem insert data:", data, "error:", error);
+
+        result = data;
+    }
+    if (activityType == "study") {
+        const topic = document.getElementById("topic").value;
+        const { data, error } = await supabase.from('study').insert([
+            {
+                user_id,
+                topic: topic
+            }
+        ])
+        .select()
+        .single();
+
+        console.log("Study insert data:", data, "error:", error);
+
+        result = data;
+    }
+    return result;
 };
