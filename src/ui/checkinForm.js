@@ -1,6 +1,7 @@
 import { getTodayKey, formatDateForDisplay } from "../utils/dateUtils.js";
+import supabase from '../config/supabaseClient.js';
 
-export async function renderUserCheckinCards(supabase) {
+export async function renderUserCheckinCards() {
     const container = document.getElementById("challengeUsers");
 
     const todayKey = getTodayKey();  // "2025-11-15" format
@@ -76,6 +77,9 @@ export async function renderUserCheckinCards(supabase) {
             openAuthModal(userId);
         });
     });
+
+    activityTypeListener();
+    attachAuthModalListeners(supabase);
 }
 
 export const openAuthModal = (userId) => {
@@ -89,3 +93,47 @@ export const closeAuthModal = () => {
     modal.classList.add("hidden");
     modal.dataset.user = "";
 }
+
+export const activityTypeListener = () => {
+    const activityType = document.getElementById("activityType");
+    const levelContainer = document.getElementById("levelContainer");
+    const levelInput = document.getElementById("level");
+
+    activityType.addEventListener("change", () => {
+        if (activityType.value === "problem") {
+            levelContainer.style.display = "block";  // Show Level
+            levelInput.required = true;
+        } else {
+            levelContainer.style.display = "none";   // Hide Level
+            levelInput.required = false;
+            levelInput.value = "";
+        }
+    });
+};
+
+export const attachAuthModalListeners = (supabase) => {
+    // Attach listeners for auth modal cancel and form submit (these elements exist in index.html)
+    const authCancel = document.querySelector('#authModal .btn-secondary');
+    if (authCancel) authCancel.addEventListener('click', () => closeAuthModal());
+
+    const authForm = document.getElementById('authForm');
+    if (authForm) {
+        authForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const password = document.getElementById('authPassword').value;
+            const userId = document.getElementById('authModal')?.dataset?.user;
+            const {data, error} = await supabase.from('users').select('password').eq('user_id', userId).single();
+            // TODO: verify password and perform check-in via Supabase here
+            if (data?.password == password) {
+                console.log("Password verified for user:", userId);
+                // Perform check-in logic here
+                closeAuthModal();
+            }
+            else {
+                document.getElementById("authModalMessage").style.color = "red";
+                document.getElementById("authModalMessage").textContent = "Incorrect password. Please try again.";
+                console.log("Password incorrect for user:", userId);
+            }
+        });
+    }
+};

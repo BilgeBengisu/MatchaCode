@@ -139,35 +139,35 @@
             </div>
             <h3 id="authModalTitle">Check-in for today's challenge</h3>
 
-            <label for="activityType">Activity Type</label>
-            <select id="activityType" name="activityType">
-                <option value="">Select one</option>
-                <option value="problem">Problem</option>
-                <option value="study">Study</option>
-            </select>
-            <div id="topicContainer">
-                <label for="topic">Topic</label>
-                <input type="text" id="topic" required />
-            </div>
-            <div id="levelContainer" style="display: none;">
-                <label for="level">Level</label>
-                <select id="level">
-                    <option value="">Select level</option>
-                    <option value="Easy">Easy</option>
-                    <option value="Medium">Medium</option>
-                    <option value="Hard">Hard</option>
-                </select>
-            </div>
-            <div id="solvedContainer" style="display: none;">
-                <label for="solved">Solved</label>
-                <select id="solved">
-                    <option value="">Select level</option>
-                    <option value="completed">Completed</option>
-                    <option value="incomplete">Incomplete</option>
-                </select>
-            </div>
-            <p id="authModalMessage">Enter the password to check in for this user.</p>
             <form id="authForm">
+                <label for="activityType">Activity Type</label>
+                <select id="activityType" name="activityType" required>
+                    <option value="">Select one</option>
+                    <option value="problem">Problem</option>
+                    <option value="study">Study</option>
+                </select>
+                <div id="topicContainer">
+                    <label for="topic">Topic</label>
+                    <input type="text" id="topic" required />
+                </div>
+                <div id="levelContainer" style="display: none;">
+                    <label for="level">Level</label>
+                    <select id="level">
+                        <option value="">Select level</option>
+                        <option value="Easy">Easy</option>
+                        <option value="Medium">Medium</option>
+                        <option value="Hard">Hard</option>
+                    </select>
+                </div>
+                <div id="solvedContainer" style="display: none;">
+                    <label for="solved">Solved</label>
+                    <select id="solved">
+                        <option value="">Select level</option>
+                        <option value="completed">Completed</option>
+                        <option value="incomplete">Incomplete</option>
+                    </select>
+                </div>
+                <p id="authModalMessage">Enter the password to check in for this user.</p>
                 <div class="input-group">
                     <i class="fa-solid fa-mug-hot"></i>
                     <input type="password" id="authPassword" placeholder="Enter password" required>
