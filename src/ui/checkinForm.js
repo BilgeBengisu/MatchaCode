@@ -118,8 +118,10 @@ export const openMatchaModal = async (userId) => {
         .select('matcha_owed')
         .eq('user_id', userId)
         .single();
+    const owed = data?.matcha_owed || 0;
 
     const msg = document.getElementById('matchaModalMessage');
+    const qtyInput = document.getElementById('matchaQuantity');
 
     if (error) {
         msg.textContent = "Could not load matcha data.";
@@ -127,14 +129,25 @@ export const openMatchaModal = async (userId) => {
         return;
     }
 
-    if (data.matcha_owed == 0) {
+    if (owed == 0) {
         msg.textContent = "You don't owe any matcha!";
         msg.style.color = "green";
         document.getElementById('matchaOweForm').classList.add("hidden");
     } else {
-        msg.textContent = `You owe ${data.matcha_owed} matcha(s).`;
-        msg.style.color = "black";
+        msg.textContent = `You owe ${owed} matcha(s).`;
+        msg.style.color = "white";
         document.getElementById('matchaOweForm').classList.remove("hidden");
+    }
+
+    qtyInput.max = owed;            // dynamic max value
+    qtyInput.value = 1;             // reset
+    qtyInput.min = 1;               // ensure minimum is valid
+
+    // Optional safety: If owed = 0, disable input
+    if (owed === 0) {
+        qtyInput.disabled = true;
+    } else {
+        qtyInput.disabled = false;
     }
 }
 
