@@ -121,7 +121,6 @@ export const openMatchaModal = async (userId) => {
     const owed = data?.matcha_owed || 0;
 
     const msg = document.getElementById('matchaModalMessage');
-    const qtyInput = document.getElementById('matchaQuantity');
 
     if (error) {
         msg.textContent = "Could not load matcha data.";
@@ -137,17 +136,6 @@ export const openMatchaModal = async (userId) => {
         msg.textContent = `You owe ${owed} matcha(s).`;
         msg.style.color = "white";
         document.getElementById('matchaOweForm').classList.remove("hidden");
-    }
-
-    qtyInput.max = owed;            // dynamic max value
-    qtyInput.value = 1;             // reset
-    qtyInput.min = 1;               // ensure minimum is valid
-
-    // Optional safety: If owed = 0, disable input
-    if (owed === 0) {
-        qtyInput.disabled = true;
-    } else {
-        qtyInput.disabled = false;
     }
 }
 
@@ -186,42 +174,31 @@ async function attachMatchaModalListeners(supabase) {
     const matchaCancel = document.querySelector('#matchaModal .btn-secondary');
     if (matchaCancel) matchaCancel.addEventListener('click', () => closeMatchaModal());
 
-    authForm.addEventListener('confirmBuyMatcha', async (e) => {
-        e.preventDefault();
-        const password = document.getElementById('matchaAuthPassword').value;
-        const userId = document.getElementById('matchaModal')?.dataset?.user;
-        const {data, error} = await supabase.from('users').select('*').eq('user_id', userId).single();
-        const user = data;
-        // TODO: verify password and perform check-in via Supabase here
-        if (user?.password == password) {
-            // Perform check-in logic here
-
-            console.log("Activity data for check-in:", activity);
-            if (user.matcha_owed > 0) {
-                const { data, error } = await supabase.rpc('decrement_matcha_owed', { p_user_id: userId });
-                if (error) console.error("Failed to decrement matcha:", error);
-            }
-
-            const activityType = document.getElementById("activityType").value;
-            const { data, error } = await supabase.from('checkins').insert([
-                {
-                    user_id: user.user_id,
-                    checkin_activity: activityType,
-                    completed: true,
-                    activity_id: activity.id,
+    const matchaBuyForm = document.getElementById('matchaOweForm');
+    if (matchaBuyForm) {
+        matchaBuyForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const password = document.getElementById('matchaAuthPassword').value;
+            const userId = document.getElementById('matchaModal')?.dataset?.user;
+            const {data, error} = await supabase.from('users').select('*').eq('user_id', userId).single();
+            const user = data;
+            if (user?.password == password) {
+                cons
+                // Perform matcha count decrement logic here
+                if (user.matcha_owed > 0) {
+                    const { data, error } = await supabase.rpc('decrement_matcha_owed', { p_user_id: userId });
+                    if (error) console.error("Failed to decrement matcha:", error);
                 }
-            ])
-            .select()
-            .maybeSingle();
 
-            closeAuthModal();
-        }
-        else {
-            document.getElementById("authModalMessage").style.color = "red";
-            document.getElementById("authModalMessage").textContent = "Incorrect password. Please try again.";
-            console.log("Password incorrect for user:", userId);
-        }
-    });
+                closeMatchaModal();
+            }
+            else {
+                document.getElementById("matchaAuthModalMessage").style.color = "red";
+                document.getElementById("matchaAuthModalMessage").textContent = "Incorrect password. Please try again.";
+                console.log("Password incorrect for user:", userId);
+            }
+        });
+    }
 };
 
 async function attachAuthModalListeners(supabase) {

@@ -191,11 +191,7 @@
             </div>
             <h3 id="matchaModalTitle">Buy a Matcha 🍵</h3>
             <p id="matchaModalMessage">You don't owe any matcha!</p>
-            <div id="matchaOweForm" class="hidden">
-                <div class="input-group">
-                    <i class="fa-solid fa-mug-hot"></i>
-                    <input type="number" id="matchaQuantity" placeholder="Number of matchas" min="1" value="1">
-                </div>
+            <form id="matchaOweForm" class="hidden">
                 <p id="matchaAuthModalMessage">Enter the password to check in for this user.</p>
                     <div class="input-group">
                         <i class="fa-solid fa-mug-hot"></i>
@@ -203,12 +199,12 @@
                     </div>
                 <div class="auth-actions">
                     <button type="button" class="btn-secondary">Cancel</button>
-                    <button type="button" class="btn-primary">
+                    <button type="submit" class="btn-primary">
                         <i class="fas fa-check"></i>
                         Buy Matcha
                     </button>
                 </div>
-            </div>
+            </form>
         </div>
     </div>
 
