@@ -206,6 +206,11 @@ async function handleCheckin(user_id) {
         result = data;
     }
 
+    const { data: streakData, error: streakError } = await supabase.rpc("increment_streak", {
+        p_user_id: user_id
+    });
+
+    if (streakError) console.error("STREAK RPC ERROR:", streakError);
 
     return result;
 };
