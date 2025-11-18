@@ -136,8 +136,21 @@ async function attachAuthModalListeners(supabase) {
             if (user?.password == password) {
                 // Perform check-in logic here
 
-                const activity = await getActivityData(user.user_id);
+                const activity = await handleCheckin(user.user_id);
                 console.log("Activity data for check-in:", activity);
+
+
+                const activityType = document.getElementById("activityType").value;
+                const { data, error } = await supabase.from('checkins').insert([
+                    {
+                        user_id: user.user_id,
+                        checkin_activity: activityType,
+                        completed: true,
+                        activity_id: activity.id,
+                    }
+                ])
+                .select()
+                .maybeSingle();
 
                 closeAuthModal();
             }
@@ -150,7 +163,7 @@ async function attachAuthModalListeners(supabase) {
     }
 };
 
-async function getActivityData(user_id) {
+async function handleCheckin(user_id) {
     const activityType = document.getElementById("activityType").value;
 
     let result = null;
@@ -158,8 +171,9 @@ async function getActivityData(user_id) {
     if (activityType == "problem") {
         const topic = document.getElementById("topic").value;
         const level = document.getElementById("level").value.toLowerCase();
-        const status = document.getElementById("solved").value.toLowerCase();
-        const solved = status === "Completed" ? true : false;
+        const status = document.getElementById("solved").value;
+        console.log("Status value:", status);
+        const solved = status === "completed" ? true : false;
 
         const { data, error } = await supabase.from('problems').insert([
             {
@@ -191,5 +205,7 @@ async function getActivityData(user_id) {
 
         result = data;
     }
+
+
     return result;
 };
