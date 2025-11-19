@@ -2,7 +2,7 @@
 import supabaseClient from './config/supabaseClient.js';
 import { createClient } from '@supabase/supabase-js';
 import { getTodayKey, formatDateForDisplay } from './utils/dateUtils.js';
-import { renderUserCheckinCards, openAuthModal, closeAuthModal } from './ui/checkinForm.js';
+import { renderUserCheckinCards } from './ui/checkinForm.js';
 import { displayDashboard } from './ui/dashboard.js';
 import supabase from './config/supabaseClient.js';
 

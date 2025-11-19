@@ -1,5 +1,9 @@
 import { getTodayKey, formatDateForDisplay } from "../utils/dateUtils.js";
 import supabase from '../config/supabaseClient.js';
+import { attachAuthModalListeners } from '../scripts/authModal.js';
+import { attachMatchaModalListeners } from '../scripts/matchaModal.js';
+import { openAuthModal, closeAuthModal } from '../scripts/authModal.js';
+import { openMatchaModal, closeMatchaModal } from '../scripts/matchaModal.js';
 
 export async function renderUserCheckinCards() {
     const container = document.getElementById("challengeUsers");
@@ -91,58 +95,8 @@ export async function renderUserCheckinCards() {
     });
 
     activityTypeListener();
-    attachAuthModalListeners(supabase);
-    attachMatchaModalListeners(supabase);
-}
-
-export const openAuthModal = (userId) => {
-    const modal = document.getElementById("authModal");
-    modal.classList.remove("hidden");
-    modal.dataset.user = userId;
-}
-
-export const closeAuthModal = () => {
-    const modal = document.getElementById("authModal");
-    modal.classList.add("hidden");
-    modal.dataset.user = "";
-}
-
-export const openMatchaModal = async (userId) => {
-    const modal = document.getElementById("matchaModal");
-    modal.classList.remove("hidden");
-    modal.dataset.user = userId;
-
-    // Fetch owed matcha dynamically
-    const { data, error } = await supabase
-        .from('users')
-        .select('matcha_owed')
-        .eq('user_id', userId)
-        .single();
-    const owed = data?.matcha_owed || 0;
-
-    const msg = document.getElementById('matchaModalMessage');
-
-    if (error) {
-        msg.textContent = "Could not load matcha data.";
-        msg.style.color = "red";
-        return;
-    }
-
-    if (owed == 0) {
-        msg.textContent = "You don't owe any matcha!";
-        msg.style.color = "green";
-        document.getElementById('matchaOweForm').classList.add("hidden");
-    } else {
-        msg.textContent = `You owe ${owed} matcha(s).`;
-        msg.style.color = "white";
-        document.getElementById('matchaOweForm').classList.remove("hidden");
-    }
-}
-
-export const closeMatchaModal = () => {
-    const modal = document.getElementById("matchaModal");
-    modal.classList.add("hidden");
-    modal.dataset.user = "";
+    attachAuthModalListeners();
+    attachMatchaModalListeners();
 }
 
 export const activityTypeListener = () => {
@@ -168,132 +122,3 @@ export const activityTypeListener = () => {
         }
     });
 };
-
-async function attachMatchaModalListeners(supabase) {
-    // Attach listeners for matcha modal cancel and form submit (these elements exist in index.html)
-    const matchaCancel = document.querySelector('#matchaModal .btn-secondary');
-    if (matchaCancel) matchaCancel.addEventListener('click', () => closeMatchaModal());
-
-    const matchaBuyForm = document.getElementById('matchaOweForm');
-    if (matchaBuyForm) {
-        matchaBuyForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const password = document.getElementById('matchaAuthPassword').value;
-            const userId = document.getElementById('matchaModal')?.dataset?.user;
-            const {data, error} = await supabase.from('users').select('*').eq('user_id', userId).single();
-            const user = data;
-            if (user?.password == password) {
-                // Perform matcha count decrement logic here
-                if (user.matcha_owed > 0) {
-                    const { data, error } = await supabase.rpc('decrement_matcha_owed', { p_user_id: userId });
-                    if (error) console.error("Failed to decrement matcha:", error);
-                }
-
-                closeMatchaModal();
-            }
-            else {
-                document.getElementById("matchaAuthModalMessage").style.color = "red";
-                document.getElementById("matchaAuthModalMessage").textContent = "Incorrect password. Please try again.";
-                console.log("Password incorrect for user:", userId);
-            }
-        });
-    }
-};
-
-async function attachAuthModalListeners(supabase) {
-    // Attach listeners for auth modal cancel and form submit (these elements exist in index.html)
-    const authCancel = document.querySelector('#authModal .btn-secondary');
-    if (authCancel) authCancel.addEventListener('click', () => closeAuthModal());
-
-    const authForm = document.getElementById('authForm');
-    if (authForm) {
-        authForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const password = document.getElementById('authPassword').value;
-            const userId = document.getElementById('authModal')?.dataset?.user;
-            const {data, error} = await supabase.from('users').select('*').eq('user_id', userId).single();
-            console.log("Auth query data:", data, "error:", error);
-            const user = data;
-            // TODO: verify password and perform check-in via Supabase here
-            if (user?.password == password) {
-                // Perform check-in logic here
-
-                const activity = await handleCheckin(user.user_id);
-                console.log("Activity data for check-in:", activity);
-
-
-                const activityType = document.getElementById("activityType").value;
-                const { data, error } = await supabase.from('checkins').insert([
-                    {
-                        user_id: user.user_id,
-                        checkin_activity: activityType,
-                        completed: true,
-                        activity_id: activity.id,
-                    }
-                ])
-                .select()
-                .maybeSingle();
-
-                closeAuthModal();
-            }
-            else {
-                document.getElementById("authModalMessage").style.color = "red";
-                document.getElementById("authModalMessage").textContent = "Incorrect password. Please try again.";
-                console.log("Password incorrect for user:", userId);
-            }
-        });
-    }
-};
-
-async function handleCheckin(user_id) {
-    const activityType = document.getElementById("activityType").value;
-
-    let result = null;
-
-    if (activityType == "problem") {
-        const topic = document.getElementById("topic").value;
-        const level = document.getElementById("level").value.toLowerCase();
-        const status = document.getElementById("solved").value;
-        console.log("Status value:", status);
-        const solved = status === "completed" ? true : false;
-
-        const { data, error } = await supabase.from('problems').insert([
-            {
-                user_id,
-                topic,
-                difficulty: level,
-                solved
-            }
-        ])
-        .select()
-        .single();
-
-        console.log("Problem insert data:", data, "error:", error);
-
-        result = data;
-    }
-    if (activityType == "study") {
-        const topic = document.getElementById("topic").value;
-        const { data, error } = await supabase.from('study').insert([
-            {
-                user_id,
-                topic: topic
-            }
-        ])
-        .select()
-        .single();
-
-        console.log("Study insert data:", data, "error:", error);
-
-        result = data;
-    }
-
-    const { data: streakData, error: streakError } = await supabase.rpc("increment_streak", {
-        p_user_id: user_id
-    });
-
-    if (streakError) console.error("STREAK RPC ERROR:", streakError);
-
-    return result;
-};
-

@@ -32,129 +32,17 @@ CREATE TABLE IF NOT EXISTS problems (
 );
 
 -- Check-ins table - tracks daily challenge completions
-CREATE TABLE IF NOT EXISTS checkins (
-    id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
-    user_id VARCHAR(50) NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
-    date DATE NOT NULL,
-    completed BOOLEAN DEFAULT FALSE,
-    timestamp TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    UNIQUE(user_id, date)
+create table checkins (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid references users(id) on delete cascade,
+  checkin_date date not null,
+  problem_completed text check (problem_completed in ('yes', 'attempted', 'no')),
+  problem_title text,
+  problem_level text check (problem_level in ('easy', 'medium', 'hard')),
+  is_completed boolean default false,  -- set true once user submits their daily challenge
+  created_at timestamp default now(),
+  unique(user_id, checkin_date)  -- one check-in per user per day
 );
-
--- Matcha log table - tracks matcha payments
-CREATE TABLE IF NOT EXISTS matcha_log (
-    id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
-    user_id VARCHAR(50) NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
-    action VARCHAR(20) NOT NULL CHECK (action IN ('owed', 'paid')),
-    amount INTEGER NOT NULL DEFAULT 1,
-    date DATE NOT NULL,
-    timestamp TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    notes TEXT
-);
-
--- Indexes for better performance
-CREATE INDEX IF NOT EXISTS idx_users_user_id ON users(user_id);
-CREATE INDEX IF NOT EXISTS idx_problems_user_date ON problems(user_id, date);
-CREATE INDEX IF NOT EXISTS idx_checkins_user_date ON checkins(user_id, date);
-CREATE INDEX IF NOT EXISTS idx_matcha_log_user_date ON matcha_log(user_id, date);
-
--- Function to update updated_at timestamp
-CREATE OR REPLACE FUNCTION update_updated_at_column()
-RETURNS TRIGGER AS $$
-BEGIN
-    NEW.updated_at = NOW();
-    RETURN NEW;
-END;
-$$ language 'plpgsql';
-
--- Triggers to automatically update updated_at
-CREATE TRIGGER update_users_updated_at BEFORE UPDATE ON users
-    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-
-CREATE TRIGGER update_problems_updated_at BEFORE UPDATE ON problems
-    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-
--- Function to get dashboard data
-CREATE OR REPLACE FUNCTION get_dashboard()
-RETURNS TABLE (
-    user_id VARCHAR(50),
-    name VARCHAR(100),
-    current_streak INTEGER,
-    total_solved INTEGER,
-    matcha_owed INTEGER,
-    recent_activities JSONB
-) AS $$
-BEGIN
-    RETURN QUERY
-    SELECT 
-        u.user_id,
-        u.name,
-        u.current_streak,
-        u.total_solved,
-        u.total_matcha_owed as matcha_owed,
-        u.activity_history as recent_activities
-    FROM users u
-    ORDER BY u.created_at ASC;
-END;
-$$ LANGUAGE plpgsql;
-
--- Function to calculate individual streak
-CREATE OR REPLACE FUNCTION calculate_individual_streak(p_user_id VARCHAR(50))
-RETURNS INTEGER AS $$
-DECLARE
-    streak_count INTEGER := 0;
-    current_date DATE := CURRENT_DATE;
-    checkin_date DATE;
-BEGIN
-    -- Get the most recent check-in
-    SELECT c.date INTO checkin_date
-    FROM checkins c
-    WHERE c.user_id = p_user_id AND c.completed = TRUE
-    ORDER BY c.date DESC
-    LIMIT 1;
-    
-    -- If no check-ins, return 0
-    IF checkin_date IS NULL THEN
-        RETURN 0;
-    END IF;
-    
-    -- Check if most recent check-in is today or yesterday
-    IF checkin_date < current_date - INTERVAL '1 day' THEN
-        RETURN 0;
-    END IF;
-    
-    -- Calculate consecutive days
-    WHILE checkin_date IS NOT NULL LOOP
-        SELECT c.date INTO checkin_date
-        FROM checkins c
-        WHERE c.user_id = p_user_id 
-        AND c.completed = TRUE 
-        AND c.date = checkin_date - INTERVAL '1 day';
-        
-        IF checkin_date IS NOT NULL THEN
-            streak_count := streak_count + 1;
-        END IF;
-    END LOOP;
-    
-    RETURN streak_count + 1; -- +1 for the most recent check-in
-END;
-$$ LANGUAGE plpgsql;
-
--- Function to calculate combined streak
-CREATE OR REPLACE FUNCTION calculate_combined_streak()
-RETURNS INTEGER AS $$
-DECLARE
-    user1_streak INTEGER;
-    user2_streak INTEGER;
-BEGIN
-    -- Get streaks for both users
-    SELECT calculate_individual_streak('bilge') INTO user1_streak;
-    SELECT calculate_individual_streak('domenica') INTO user2_streak;
-    
-    -- Return minimum of both streaks
-    RETURN LEAST(user1_streak, user2_streak);
-END;
-$$ LANGUAGE plpgsql;
 
 -- Row Level Security (RLS) policies
 ALTER TABLE users ENABLE ROW LEVEL SECURITY;
@@ -174,3 +62,88 @@ CREATE POLICY "Allow all operations for authenticated users" ON checkins
 
 CREATE POLICY "Allow all operations for authenticated users" ON matcha_log
     FOR ALL USING (true);
+
+-- problems table count
+CREATE OR REPLACE FUNCTION total_problem_count()
+RETURNS bigint
+LANGUAGE sql
+AS $$
+    SELECT COUNT(*)::bigint AS total_problem_count
+    FROM problems
+    WHERE solved = true;
+$$;
+
+-- problems insert policy 
+CREATE POLICY "Problems insert allowed"
+ON problems
+FOR INSERT
+WITH CHECK (auth.uid() = username);
+
+-- increment user streak by 1 function
+create or replace function increment_streak(p_user_id text)
+returns void
+language plpgsql
+security definer
+as $$
+begin
+  update users
+  set streak = streak + 1,
+      last_checkin = current_date
+  where user_id = p_user_id;
+end;
+$$;
+
+grant execute on function increment_streak(text) to authenticated;
+
+-- 1) Function: update_daily_streaks()
+CREATE OR REPLACE FUNCTION public.update_daily_streaks()
+RETURNS void
+LANGUAGE plpgsql
+AS $$
+DECLARE
+  usr RECORD;
+  has_activity boolean;
+  activity_date date := (now() at time zone 'utc')::date;
+BEGIN
+  FOR usr IN SELECT id, streak FROM public.users LOOP
+    -- Check if there's any activity today in either table for this user
+    SELECT EXISTS (
+      SELECT 1 FROM public.problems p
+      WHERE p.user_id = usr.id
+        AND (p.created_at AT TIME ZONE 'utc')::date = activity_date
+      UNION
+      SELECT 1 FROM public.studies s
+      WHERE s.user_id = usr.id
+        AND (s.created_at AT TIME ZONE 'utc')::date = activity_date
+    ) INTO has_activity;
+
+    IF has_activity THEN
+      -- Increment streak
+      UPDATE public.users
+      SET streak = COALESCE(usr.streak, 0) + 1
+      WHERE id = usr.id;
+    ELSE
+      -- Reset streak
+      UPDATE public.users
+      SET streak = 0
+      WHERE id = usr.id;
+    END IF;
+  END LOOP;
+END;
+$$;
+
+-- 2) Function: decrement_matcha_owed(p_user_id text)
+CREATE OR REPLACE FUNCTION decrement_matcha_owed(p_user_id text)
+RETURNS void
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+BEGIN
+  UPDATE users
+  SET matcha_owed = GREATEST(matcha_owed - 1, 0)
+  WHERE user_id = p_user_id;
+END;
+$$;
+
+-- Grant execution to authenticated users
+GRANT EXECUTE ON FUNCTION decrement_matcha_owed(text) TO authenticated;
