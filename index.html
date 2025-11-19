@@ -183,28 +183,37 @@
         </div>
     </div>
 
-    <!-- Matcha Modal -->
     <div id="matchaModal" class="modal hidden">
         <div class="modal-content">
             <div class="modal-icon">
                 <i class="fa-solid fa-mug-hot"></i>
             </div>
+
+            <!-- DEFAULT: User owes nothing -->
             <h3 id="matchaModalTitle">Buy a Matcha 🍵</h3>
             <p id="matchaModalMessage">You don't owe any matcha!</p>
+
+            <!-- Password + Buy Matcha (HIDDEN BY DEFAULT) -->
             <form id="matchaOweForm" class="hidden">
-                <p id="matchaAuthModalMessage">Enter the password to check in for this user.</p>
-                    <div class="input-group">
-                        <i class="fa-solid fa-mug-hot"></i>
-                        <input type="password" id="matchaAuthPassword" placeholder="Enter password" required>
-                    </div>
+                <p id="matchaAuthModalMessage">Enter the password to buy matcha for this user.</p>
+
+                <div class="input-group">
+                    <i class="fa-solid fa-key"></i>
+                    <input type="password" id="matchaAuthPassword" placeholder="Enter password" required>
+                </div>
+
                 <div class="auth-actions">
-                    <button type="button" class="btn-secondary">Cancel</button>
                     <button type="submit" class="btn-primary">
                         <i class="fas fa-check"></i>
                         Buy Matcha
                     </button>
                 </div>
             </form>
+
+            <!-- Cancel button for NO-OWE default state -->
+            <div id="matchaDefaultButtons" class="auth-actions">
+                <button type="button" class="btn-secondary">Cancel</button>
+            </div>
         </div>
     </div>
 

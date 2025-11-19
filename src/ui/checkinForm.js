@@ -183,7 +183,6 @@ async function attachMatchaModalListeners(supabase) {
             const {data, error} = await supabase.from('users').select('*').eq('user_id', userId).single();
             const user = data;
             if (user?.password == password) {
-                cons
                 // Perform matcha count decrement logic here
                 if (user.matcha_owed > 0) {
                     const { data, error } = await supabase.rpc('decrement_matcha_owed', { p_user_id: userId });
