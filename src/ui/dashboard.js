@@ -37,27 +37,40 @@ export async function displayDashboard(supabase) {
         });
 
         // Fetch recent problems and study entries (get a few from each and merge)
-        const [{ data: problemsData }, { data: studyData }] = await Promise.all([
-            supabase.from('problems').select('id, user_id, title, difficulty, status, created_at').order('created_at', { ascending: false }).limit(5),
+        const [{ data: problemsData, error: problemsError }, { data: studyData, error: studyError }] = await Promise.all([
+            supabase.from('problems').select('id, user_id, topic, difficulty, solved, created_at').order('created_at', { ascending: false }).limit(5),
             supabase.from('study').select('id, user_id, topic, created_at').order('created_at', { ascending: false }).limit(5)
         ]);
 
+        // Log any errors for debugging
+        if (problemsError) {
+            console.error('Error fetching problems:', problemsError);
+        }
+        if (studyError) {
+            console.error('Error fetching study:', studyError);
+        }
+
+        console.log('Problems data:', problemsData);
+        console.log('Study data:', studyData);
+
         const activities = [];
 
-        if (problemsData) {
+        if (problemsData && problemsData.length > 0) {
             problemsData.forEach(p => {
                 const name = userMap[p.user_id] || p.user_id;
-                const solved = p.status === 'completed';
-                const topic = p.topic || 'a problem'; // Use 'topic' from schema
+                const solved = p.solved;
+                const topic = p.topic || 'a problem';
                 const difficulty = p.difficulty ? ` (${p.difficulty})` : '';
-                const message = solved ? `${name} solved ${topic}${difficulty}` : `${name} worked on ${topic}${difficulty}`;
+                const message = solved ? `${name} solved ${topic}${difficulty} problem` : `${name} worked on ${topic}${difficulty} problem`;
                 activities.push({
                     id: p.id,
                     message,
                     timestamp: p.created_at,
-                    type: solved ? 'completed' : 'general'
+                    type: solved ? 'completed' : 'incomplete'
                 });
             });
+        } else {
+            console.log('No problems data found or empty array');
         }
 
         if (studyData) {
