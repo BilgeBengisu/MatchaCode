@@ -171,11 +171,6 @@ FEATURES: {
 
 MIT License - see LICENSE file for details
 
-## 👥 Contributors
-
-- **Bilge Akyol** - Creator and developer
-- **Domenica** - Coding partner and motivator
-
 ---
 
 *Powered by matcha and motivation © 2025 Bilge Akyol* 🍵
