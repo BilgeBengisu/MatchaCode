@@ -220,7 +220,6 @@ export class UIView {
         
         const description = clone.querySelector('.item-description');
         const date = clone.querySelector('.item-date');
-        const status = clone.querySelector('.item-status i');
         
         if (description) {
             description.textContent = activity.message || activity.description || '';
@@ -228,10 +227,6 @@ export class UIView {
         
         if (date) {
             date.textContent = formatTimestamp(activity.timestamp, 'relative');
-        }
-        
-        if (status) {
-            status.className = this.getActivityIconClass(activity.type);
         }
         
         return clone;

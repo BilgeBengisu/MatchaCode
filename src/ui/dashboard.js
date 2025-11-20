@@ -95,13 +95,9 @@ export async function displayDashboard(supabase) {
                     const clone = template.content.cloneNode(true);
                     const desc = clone.querySelector('.item-description');
                     const dateEl = clone.querySelector('.item-date');
-                    const icon = clone.querySelector('.item-status i');
 
                     if (desc) desc.textContent = formatActivityMessage(act.message, act.type);
                     if (dateEl) dateEl.textContent = formatTimestamp(act.timestamp, 'relative');
-                    if (icon) {
-                        icon.className = act.type === 'completed' ? 'fas fa-check-circle' : 'fas fa-info-circle';
-                    }
 
                     activityListEl.appendChild(clone);
                 });
