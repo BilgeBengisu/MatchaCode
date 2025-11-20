@@ -1,3 +1,5 @@
+import supabase from '../config/supabaseClient.js';
+
 export async function handleCheckin(user_id) {
     const activityType = document.getElementById("activityType").value;
 
@@ -6,16 +8,19 @@ export async function handleCheckin(user_id) {
     if (activityType == "problem") {
         const topic = document.getElementById("topic").value;
         const level = document.getElementById("level").value.toLowerCase();
-        const status = document.getElementById("solved").value;
-        console.log("Status value:", status);
-        const solved = status === "completed" ? true : false;
+        const statusValue = document.getElementById("solved").value;
+        console.log("Status value:", statusValue);
+        // Map to schema: 'completed' -> 'completed', 'incomplete' -> 'attempted'
+        const status = statusValue === "completed" ? "completed" : "attempted";
+        const today = new Date().toISOString().split('T')[0]; // Get today's date in YYYY-MM-DD format
 
         const { data, error } = await supabase.from('problems').insert([
             {
                 user_id,
-                topic,
+                topic: topic,
                 difficulty: level,
-                solved
+                status, 
+                date: today
             }
         ])
         .select()

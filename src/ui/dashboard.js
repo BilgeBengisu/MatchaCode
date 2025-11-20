@@ -38,7 +38,7 @@ export async function displayDashboard(supabase) {
 
         // Fetch recent problems and study entries (get a few from each and merge)
         const [{ data: problemsData }, { data: studyData }] = await Promise.all([
-            supabase.from('problems').select('id, user_id, topic, difficulty, solved, status, created_at').order('created_at', { ascending: false }).limit(5),
+            supabase.from('problems').select('id, user_id, title, difficulty, status, created_at').order('created_at', { ascending: false }).limit(5),
             supabase.from('study').select('id, user_id, topic, created_at').order('created_at', { ascending: false }).limit(5)
         ]);
 
@@ -47,8 +47,8 @@ export async function displayDashboard(supabase) {
         if (problemsData) {
             problemsData.forEach(p => {
                 const name = userMap[p.user_id] || p.user_id;
-                const solved = typeof p.solved !== 'undefined' ? p.solved : (p.status === 'completed');
-                const topic = p.topic || 'a problem';
+                const solved = p.status === 'completed';
+                const topic = p.topic || 'a problem'; // Use 'topic' from schema
                 const difficulty = p.difficulty ? ` (${p.difficulty})` : '';
                 const message = solved ? `${name} solved ${topic}${difficulty}` : `${name} worked on ${topic}${difficulty}`;
                 activities.push({

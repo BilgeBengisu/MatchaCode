@@ -32,6 +32,7 @@ export async function attachAuthModalListeners() {
                 .maybeSingle();
 
                 closeAuthModal();
+                location.reload(); // Refresh to show updated dashboard and check-in status
             }
             else {
                 document.getElementById("authModalMessage").style.color = "red";

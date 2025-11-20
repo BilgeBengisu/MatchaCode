@@ -23,12 +23,12 @@ CREATE TABLE IF NOT EXISTS problems (
     id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
     user_id VARCHAR(50) NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
     date DATE NOT NULL,
-    title VARCHAR(255),
+    topic VARCHAR(255),
     difficulty VARCHAR(20) CHECK (difficulty IN ('easy', 'medium', 'hard')),
     status VARCHAR(20) NOT NULL CHECK (status IN ('completed', 'attempted', 'not completed')),
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    UNIQUE(user_id, date, title)
+    UNIQUE(user_id, date, topic)
 );
 
 -- Check-ins table - tracks daily challenge completions
@@ -37,7 +37,7 @@ create table checkins (
   user_id uuid references users(id) on delete cascade,
   checkin_date date not null,
   problem_completed text check (problem_completed in ('yes', 'attempted', 'no')),
-  problem_title text,
+  problem_topic text,
   problem_level text check (problem_level in ('easy', 'medium', 'hard')),
   is_completed boolean default false,  -- set true once user submits their daily challenge
   created_at timestamp default now(),

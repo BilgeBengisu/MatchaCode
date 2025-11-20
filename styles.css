@@ -333,7 +333,7 @@ body {
 }
 
 .stat-card {
-    background: #70503E;
+    background: rgba(61, 141, 64, 0.3);
     backdrop-filter: blur(10px);
     border-radius: 12px;
     padding: 20px;
@@ -472,7 +472,7 @@ body {
 .user-stat {
     text-align: center;
     padding: 10px;
-    background: #70503E;
+    background: rgba(76, 175, 80, 0.3);
     border-radius: 8px;
     border: 1px solid rgba(76, 175, 80, 0.2);
 }
