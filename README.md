@@ -1,230 +1,182 @@
-# 🍵 MatchaCode - Daily LeetCode Challenge Tracker
+# MatchaCode - Daily LeetCode Challenge Tracker
 
-A fun and motivating static website to track daily LeetCode challenges between friends, with a matcha-themed accountability system! Built for Bilge and Domenica to stay motivated and accountable in their coding journey.
+A fun and motivating way for Bilge and Domenica to track their daily LeetCode challenges together!
 
-## 🌟 Features
+## 🍵 Features
 
-- **Two-User System** - Separate tracking for Bilge and Domenica
-- **Daily Challenge Tracking** - Mark your LeetCode problems as complete with authentication
-- **Smart Streak Counter** - Individual and combined streak tracking
-- **Automatic Matcha Tracker** - Automatically counts missed days from September 3rd, 2025
-- **Activity History** - See your recent progress and missed days
-- **Secure Authentication** - Environment variable-based password protection
-- **Responsive Design** - Works great on desktop and mobile with dark techy theme
-- **Local Storage** - Data persists between sessions
-- **Profile Pictures** - Personal touch with user avatars
-- **Clean UI** - Modern glassmorphism design with beige cards
+- **Daily Challenge Tracking**: Mark challenges as complete with authentication
+- **Streak Management**: Track individual and combined streaks
+- **Matcha Challenge**: Miss a day = owe a matcha! 🍵
+- **Activity History**: See recent progress and achievements
+- **Responsive Design**: Works on desktop and mobile devices
 
-## 🚀 Quick Start
+## 🏗️ Project Structure
 
-1. **Clone or download** this repository
-2. **Open `index.html`** in your web browser
-3. **Enter the password**: `matcha2024` (or your custom password)
-4. **Mark Complete** when you finish today's LeetCode challenge
-5. **Track your progress** with streaks and matcha counts!
+```
+MatchaCode/
+├── src/
+│   ├── config.js              # App configuration and constants
+│   ├── main.js                # Main application entry point
+│   ├── controllers/
+│   │   ├── globalController.js    # Global app operations
+│   │   └── userController.js      # User-specific operations
+│   ├── models/
+│   │   ├── globalModel.js         # Global data model
+│   │   └── userModel.js           # User data model
+│   ├── services/
+│   │   └── supabase-client.js     # Database operations
+│   ├── utils/
+│   │   ├── dateUtils.js           # Date utility functions
+│   │   └── formatUtils.js         # Formatting utilities
+│   └── views/
+│       └── ui.js                  # UI manipulation and updates
+├── index.html                 # Main HTML file
+├── styles.css                 # CSS styles
+├── package.json               # Dependencies and scripts
+└── vercel.json               # Vercel deployment config
+```
 
-## 🎯 How It Works
+## 🚀 Getting Started
 
-### For Users (Bilge & Domenica)
-1. **View the dashboard** - See your stats and today's challenge
-2. **Mark Complete** - Click your "Mark Complete" button and enter the password
-3. **Track streaks** - Individual streaks and combined streaks when both complete
-4. **Monitor matcha owed** - Automatically tracks missed days from September 3rd, 2025
+### Prerequisites
 
-### Matcha Logic
-- **Start Date**: September 3rd, 2025 (when the website was implemented)
-- **Missing Days**: Any day from start date to yesterday without a completion
-- **Automatic Tracking**: System automatically detects and counts missed days
-- **Fair System**: Only counts days from when the website was actually being used
+- Node.js 16+ 
+- Modern web browser with ES6 module support
+- Supabase account and project
 
-## 🔐 Environment Variables & Security
+### Environment Setup
 
-The app now uses environment variables to keep the password secure and out of source code.
+1. **Create environment file**:
+   ```bash
+   # Copy the example file
+   cp .env.example .env.local
+   
+   # Edit with your values
+   nano .env.local
+   ```
 
-### Local Development
-1. Copy `env.example` to `.env` (optional for local dev)
-2. Set your password: `MATCHACODE_PASSWORD=your-secure-password`
-3. Run `npm run build:dev` to build with development settings
+2. **Set environment variables**:
+   ```bash
+   # Supabase Configuration
+   VITE_SUPABASE_URL=https://your-project.supabase.co
+   VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
+   
+   # App Configuration
+   VITE_APP_PASSWORD=your_secure_password
+   ```
 
-### Production Deployment
-Set the environment variable `MATCHACODE_PASSWORD` in your deployment platform:
+### Development
 
-#### Netlify
-1. Go to Site Settings → Environment Variables
-2. Add `MATCHACODE_PASSWORD` with your secure password
-3. Deploy - the build process will automatically use your environment variable
+1. **Install dependencies**:
+   ```bash
+   npm install
+   ```
 
-#### Vercel
-1. Go to Project Settings → Environment Variables
-2. Add `MATCHACODE_PASSWORD` with your secure password
-3. Deploy - the build process will automatically use your environment variable
+2. **Start development server**:
+   ```bash
+   npm run dev
+   # or
+   npm start
+   ```
 
-#### GitHub Pages
-GitHub Pages doesn't support environment variables. For GitHub Pages:
-1. Run `npm run build` locally with your password set
-2. Commit the generated `config.js` file
-3. Deploy to GitHub Pages
+3. **Open in browser**:
+   Navigate to `http://localhost:3000`
 
-## 🛠️ Development & Debugging
+### Production
 
-### Console Functions
-Open browser console (F12) for debugging and management:
+The app is designed to be deployed on Vercel as a static site.
+
+## 🏛️ Architecture
+
+### Modular Design
+
+The application follows a modular architecture with clear separation of concerns:
+
+- **Models**: Handle data structure and business logic
+- **Controllers**: Manage operations and coordinate between models and views
+- **Views**: Handle DOM manipulation and UI updates
+- **Services**: Manage external API calls and data persistence
+- **Utils**: Provide utility functions for common operations
+
+### Data Flow
+
+1. **Initialization**: App loads data from Supabase or localStorage
+2. **User Actions**: Controllers handle user interactions
+3. **Data Updates**: Models update application state
+4. **UI Updates**: Views reflect changes in the DOM
+5. **Persistence**: Services save data to Supabase and localStorage
+
+## 🔧 Configuration
+
+### Environment Variables
+
+The app uses Supabase for data persistence. Configuration is in `src/config.js`:
+
+- `SUPABASE_URL`: Supabase project URL
+- `SUPABASE_ANON_KEY`: Supabase anonymous key
+- `ACCESS_PASSWORD`: Authentication password (default: 'matcha')
+
+### Feature Flags
+
+Enable/disable features in `src/config.js`:
 
 ```javascript
-// Reset and clean functions
-resetAllMatchaCounts()     // Reset matcha owed counts to 0
-cleanActivityList()        // Clear all activity history
-resetAllData()            // Reset everything (completions, streaks, matcha, activity)
-
-// Data inspection
-inspectData()             // View current data structure
-checkMissedDays()         // Manually trigger missed day check
-
-// Manual operations
-markYesterdayMissed('bilge')     // Mark Bilge as missed yesterday
-markYesterdayMissed('domenica')  // Mark Domenica as missed yesterday
-resetMatchaOwed('bilge')         // Reset Bilge's matcha count
-resetMatchaOwed('domenica')      // Reset Domenica's matcha count
+FEATURES: {
+    ENABLE_NOTIFICATIONS: true,
+    ENABLE_SOUND_EFFECTS: false,
+    ENABLE_ANIMATIONS: true,
+    ENABLE_OFFLINE_MODE: true
+}
 ```
 
-### Adding Past Completions
-```javascript
-// Add completions for past days
-addPastCompletions()  // Adds completions for the last 2 days
+## 📱 Usage
 
-// Add specific completions
-addSpecificCompletions([
-    { user: 'bilge', date: '2025-09-01' },
-    { user: 'domenica', date: '2025-09-02' }
-])
-```
+1. **Check In**: Click "Mark Complete" for your daily challenge
+2. **Authenticate**: Enter the password to confirm completion
+3. **Track Progress**: View your streak and total problems solved
+4. **Stay Motivated**: See combined progress with your coding partner!
 
-## 🎨 Current Design
+## 🛠️ Development
 
-### Techy Coding Theme
-The website features a modern dark theme perfect for coding:
+### Adding New Features
 
-```css
-/* Dark brown gradient background */
-background: linear-gradient(135deg, #2c1810 0%, #1a0f0a 100%);
+1. **Models**: Add data structures and business logic
+2. **Controllers**: Add operations and API calls
+3. **Views**: Add UI components and interactions
+4. **Services**: Add external integrations
 
-/* Matcha green accents */
-color: #4CAF50;
+### Code Style
 
-/* LeetCode orange highlights */
-background: linear-gradient(135deg, #FF8C00, #FF6B35);
-
-/* Beige user cards for contrast */
-background: #F5F5DC;
-```
-
-### UI Components
-- **Glassmorphism cards** with backdrop blur effects
-- **Floating matcha emoji** in the header with animation
-- **Profile pictures** for personal touch
-- **Responsive sidebar** with stats and activity
-- **Interactive modals** for authentication and info
-
-### Adding More Features
-The app is built with vanilla JavaScript, making it easy to extend:
-
-- Add difficulty levels for challenges
-- Implement a points system
-- Add more statistics
-- Create weekly/monthly views
+- Use ES6+ features
+- Follow modular architecture
+- Add JSDoc comments for functions
+- Use meaningful variable names
+- Handle errors gracefully
 
 ## 🚀 Deployment
 
 ### Vercel
-1. Install Vercel CLI: `npm i -g vercel`
-2. Run `vercel` in the project directory
-3. Follow the prompts
 
-### GitHub Pages
-1. Push to a GitHub repository
-2. Go to Settings > Pages
-3. Select source branch and deploy
+1. Connect your GitHub repository to Vercel
+2. Configure build settings (static site)
+3. Deploy automatically on push to main branch
 
-## 🛠️ Technical Details
+### Manual Deployment
 
-- **Frontend**: Vanilla HTML, CSS, JavaScript (no frameworks needed!)
-- **Storage**: Browser localStorage with data migration support
-- **Authentication**: Environment variable-based password protection
-- **Responsive**: Mobile-first design with sidebar layout
-- **Performance**: Optimized for fast loading with glassmorphism effects
-- **Date Handling**: Local timezone support with proper date key migration
-- **Build System**: Node.js build script for environment variable injection
-
-## 📊 Data Storage
-
-All data is stored locally in your browser using localStorage:
-- **User Data**: Individual completions, streaks, and matcha owed counts
-- **Daily Challenges**: Completion status with timestamps
-- **Activity History**: Recent actions and missed day notifications
-- **Streak Calculations**: Individual and combined streak tracking
-- **Data Migration**: Automatic conversion of old date formats
-
-**Data Structure**:
-```javascript
-{
-  users: {
-    bilge: {
-      name: 'Bilge',
-      currentStreak: 0,
-      totalSolved: 0,
-      totalMatchaOwed: 0,
-      dailyChallenges: {},
-      activityHistory: []
-    },
-    domenica: { /* same structure */ }
-  }
-}
-```
-
-**Note**: Data is tied to the specific browser/device. If you want to share data between devices, you'd need to implement a backend solution.
-
-## 🔒 Security
-
-This is a simple static website with basic password protection. For production use with sensitive data, consider:
-- Implementing proper user authentication
-- Using HTTPS
-- Adding server-side validation
-- Implementing proper session management
-
-## 🤝 Contributing
-
-Feel free to fork this project and add your own features! Some ideas:
-- Dark mode toggle
-- Challenge difficulty tracking
-- Social features for multiple friends
-- Integration with LeetCode API
-- Mobile app version
+1. Build the project (if needed)
+2. Upload files to your hosting provider
+3. Configure server for SPA routing (if needed)
 
 ## 📄 License
 
-This project is open source and available under the MIT License.
+MIT License - see LICENSE file for details
 
-## 🍵 About MatchaCode
+## 👥 Contributors
 
-MatchaCode was created to make daily coding practice more fun and accountable for Bilge and Domenica. The matcha theme adds a playful element to the serious business of becoming better programmers!
-
-### Current Status
-- **Start Date**: September 3rd, 2025
-- **Users**: Bilge and Domenica
-- **Goal**: Daily LeetCode challenges with matcha accountability
-- **Theme**: Dark techy coding environment with matcha green accents
-
-### Key Features Implemented
-✅ **Two-user system** with separate tracking  
-✅ **Smart matcha logic** - only counts missing days from implementation date  
-✅ **Automatic streak calculation** - individual and combined streaks  
-✅ **Secure authentication** with environment variables  
-✅ **Modern UI** with glassmorphism and responsive design  
-✅ **Profile pictures** and personal touches  
-✅ **Activity tracking** with missed day notifications  
-
-**Remember**: The best way to get better at coding is consistent practice. Even if you miss a day, don't give up - tomorrow is a new opportunity to get back on track! 💪
+- **Bilge Akyol** - Creator and developer
+- **Domenica** - Coding partner and motivator
 
 ---
 
 *Powered by matcha and motivation © 2025 Bilge Akyol* 🍵
+*Keep coding and stay motivated together! 💪*
