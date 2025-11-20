@@ -246,7 +246,7 @@ body {
 }
 
 .subtitle-line {
-    font-size: 0.85rem;
+    font-size: 1.1rem;
     font-weight: 600;
     color: white;
     line-height: 1.2;
@@ -267,7 +267,7 @@ body {
 }
 
 .app-title {
-    font-size: 1.8rem;
+    font-size: 2.2rem;
     font-weight: 700;
     background: white;
     -webkit-background-clip: text;
@@ -960,7 +960,7 @@ body {
     }
     
     .app-title {
-        font-size: 1.4rem;
+        font-size: 1.7rem;
     }
     
     .header-subtitle {
@@ -968,7 +968,7 @@ body {
     }
     
     .subtitle-line {
-        font-size: 0.75rem;
+        font-size: 0.95rem;
     }
     
     .main-layout {
