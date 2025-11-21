@@ -17,7 +17,13 @@ export default defineConfig({
     outDir: 'dist',
     assetsDir: 'assets',
     sourcemap: true,
-    minify: 'terser'
+    minify: 'terser',
+    target: 'es2022' // Support top-level await
+  },
+  
+  // esbuild configuration for transpilation
+  esbuild: {
+    target: 'es2022' // Support top-level await in esbuild
   },
   
   // Optimize dependencies
