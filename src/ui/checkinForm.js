@@ -6,28 +6,47 @@ import { openAuthModal, closeAuthModal } from '../scripts/authModal.js';
 import { openMatchaModal, closeMatchaModal } from '../scripts/matchaModal.js';
 
 export async function renderUserCheckinCards() {
-    const container = document.getElementById("challengeUsers");
+    try {
+        const container = document.getElementById("challengeUsers");
+        
+        if (!container) {
+            console.error("Container element 'challengeUsers' not found!");
+            return;
+        }
 
-    const todayKey = getTodayKey();  // "2025-11-15" format
+        const todayKey = getTodayKey();  // "2025-11-15" format
+        console.log("Today's key:", todayKey);
 
-    // 1. Fetch all users
-    const { data: users, error } = await supabase
-        .from("users")
-        .select("*")
-        .order("username");
+        // 1. Fetch all users
+        console.log("Fetching users from Supabase...");
+        const { data: users, error } = await supabase
+            .from("users")
+            .select("*")
+            .order("username");
 
-    if (error) {
-        console.error("Failed to load users:", error);
-        return;
-    }
+        if (error) {
+            console.error("Failed to load users:", error);
+            return;
+        }
+
+        if (!users || users.length === 0) {
+            console.warn("No users found in database");
+            return;
+        }
+
+        console.log(`Found ${users.length} users:`, users);
 
     // 2. Render each user card
     for (const user of users) {
-        const { count, error } = await supabase
+        const { count, error: countError } = await supabase
             .from('problems')
             .select('*', { count: 'exact', head: true })  // <-- head:true prevents returning all rows
             .eq('solved', true)
             .eq('user_id', user.user_id);
+        
+        if (countError) {
+            console.error(`Error fetching problem count for user ${user.user_id}:`, countError);
+        }
 
         const checkedIn = user.last_checkin === todayKey;
 
@@ -94,9 +113,15 @@ export async function renderUserCheckinCards() {
         });
     });
 
-    activityTypeListener();
-    attachAuthModalListeners();
-    attachMatchaModalListeners();
+        activityTypeListener();
+        attachAuthModalListeners();
+        attachMatchaModalListeners();
+        
+        console.log("User check-in cards rendered successfully");
+    } catch (error) {
+        console.error("Error rendering user check-in cards:", error);
+        console.error("Error stack:", error.stack);
+    }
 }
 
 export const activityTypeListener = () => {

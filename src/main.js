@@ -6,26 +6,27 @@ import { displayDashboard } from './ui/dashboard.js';
 
 // Main application entry point
 document.addEventListener('DOMContentLoaded', async function() {
-    console.log('MatchaCode application loaded successfully!');
+    try {
+        console.log('MatchaCode application loaded successfully!');
 
-    // today's date display
-    const todayDate = formatDateForDisplay(getTodayKey());
-    console.log(todayDate)
-    document.getElementById('todayDate').innerText = todayDate;
+        // today's date display
+        const todayDate = formatDateForDisplay(getTodayKey());
+        console.log(todayDate);
+        document.getElementById('todayDate').innerText = todayDate;
 
-    // *** dashboard
-    // combined streak display
-    await displayDashboard(supabase);
+        // *** dashboard
+        // combined streak display
+        await displayDashboard(supabase);
 
-    // Render user check-in cards
-    await renderUserCheckinCards();
+        // Render user check-in cards
+        console.log('Rendering user check-in cards...');
+        await renderUserCheckinCards();
+        console.log('User check-in cards rendered successfully');
 
-
-    // displaying daily checkin for users
-    // gettting the users
-    // const bilge = await supabase.from('users').select('*').eq('username', 'Bilge').single();
-    // const domenica = await supabase.from('users').select('*').eq('username', 'Domenica').single();
-
-    // Log when the page is fully loaded
-    console.log('DOM is ready and event listeners are attached');
+        // Log when the page is fully loaded
+        console.log('DOM is ready and event listeners are attached');
+    } catch (error) {
+        console.error('Error initializing application:', error);
+        console.error('Error stack:', error.stack);
+    }
 });
