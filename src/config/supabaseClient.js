@@ -1,7 +1,7 @@
 // Supabase client configuration for MatchaCode
 // Handles all database operations and API calls
 
-import { createClient } from '@supabase/supabase-js';
+import { createClient } from '../node_modules/@supabase/supabase-js';
 
 // Supabase configuration - using environment variables
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
