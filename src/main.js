@@ -1,8 +1,12 @@
+// Import styles
+import '../styles.css';
+
 // Import Supabase client
 import supabase from './config/supabaseClient.js';
 import { getTodayKey, formatDateForDisplay } from './utils/dateUtils.js';
 import { renderUserCheckinCards } from './ui/checkinForm.js';
 import { displayDashboard } from './ui/dashboard.js';
+import './scripts/aboutModal.js';
 
 // Main application entry point
 document.addEventListener('DOMContentLoaded', async function() {
