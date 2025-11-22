@@ -15,10 +15,8 @@ export async function renderUserCheckinCards() {
         }
 
         const todayKey = getTodayKey();  // "2025-11-15" format
-        console.log("Today's key:", todayKey);
 
         // 1. Fetch all users
-        console.log("Fetching users from Supabase...");
         const { data: users, error } = await supabase
             .from("users")
             .select("*")
@@ -34,8 +32,6 @@ export async function renderUserCheckinCards() {
             return;
         }
 
-        console.log(`Found ${users.length} users:`, users);
-
     // 2. Render each user card
     for (const user of users) {
         const { count, error: countError } = await supabase
@@ -49,6 +45,8 @@ export async function renderUserCheckinCards() {
         }
 
         const checkedIn = user.last_checkin === todayKey;
+        const dateWithWeekday = formatDateForDisplay(todayKey, 'withWeekday');
+        document.getElementById('todayDate').innerText = dateWithWeekday;
 
         const card = document.createElement("div");
         card.classList.add("user-checkin-card");
@@ -116,8 +114,6 @@ export async function renderUserCheckinCards() {
         activityTypeListener();
         attachAuthModalListeners();
         attachMatchaModalListeners();
-        
-        console.log("User check-in cards rendered successfully");
     } catch (error) {
         console.error("Error rendering user check-in cards:", error);
         console.error("Error stack:", error.stack);

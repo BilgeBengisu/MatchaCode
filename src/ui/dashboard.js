@@ -30,7 +30,7 @@ export async function displayDashboard(supabase) {
     // --- Recent Activity: fetch latest problems and study entries and show top 2 ---
     try {
         // Fetch users (map user_id -> display name)
-        const { data: usersData } = await supabase.from('users').select('user_id, username, name');
+        const { data: usersData } = await supabase.from('users').select('user_id, username');
         const userMap = {};
         (usersData || []).forEach(u => {
             userMap[u.user_id] = u.username || u.name || u.user_id;
@@ -49,9 +49,6 @@ export async function displayDashboard(supabase) {
         if (studyError) {
             console.error('Error fetching study:', studyError);
         }
-
-        console.log('Problems data:', problemsData);
-        console.log('Study data:', studyData);
 
         const activities = [];
 

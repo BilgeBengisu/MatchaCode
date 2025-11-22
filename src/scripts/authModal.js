@@ -12,12 +12,12 @@ export async function attachAuthModalListeners() {
             const password = document.getElementById('authPassword').value;
             const userId = document.getElementById('authModal')?.dataset?.user;
             const {data, error} = await supabase.from('users').select('*').eq('user_id', userId).single();
-            console.log("Auth query data:", data, "error:", error);
+            // console.log("Auth query data:", data, "error:", error);
             const user = data;
             if (user?.password == password) {
                 // Perform check-in logic here
                 const activity = await handleCheckin(user.user_id);
-                console.log("Activity data for check-in:", activity);
+                // console.log("Activity data for check-in:", activity);
 
                 const activityType = document.getElementById("activityType").value;
                 const { data, error } = await supabase.from('checkins').insert([
@@ -37,7 +37,7 @@ export async function attachAuthModalListeners() {
             else {
                 document.getElementById("authModalMessage").style.color = "red";
                 document.getElementById("authModalMessage").textContent = "Incorrect password. Please try again.";
-                console.log("Password incorrect for user:", userId);
+                // console.log("Password incorrect for user:", userId);
             }
         });
     }

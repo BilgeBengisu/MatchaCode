@@ -106,7 +106,7 @@ export const getDateRange = (startDateKey, endDateKey) => {
 /**
  * Format date for display
  * @param {string} dateKey - Date key to format
- * @param {string} format - Format type ('short', 'long', 'relative')
+ * @param {string} format - Format type ('short', 'long', 'relative', 'withWeekday')
  * @returns {string} Formatted date string
  */
 export const formatDateForDisplay = (dateKey, format = 'short') => {
@@ -115,6 +115,12 @@ export const formatDateForDisplay = (dateKey, format = 'short') => {
     switch (format) {
         case 'short':
             return date.toLocaleDateString('en-US', {
+                month: 'short',
+                day: 'numeric'
+            });
+        case 'withWeekday':
+            return date.toLocaleDateString('en-US', {
+                weekday: 'long',
                 month: 'short',
                 day: 'numeric'
             });

@@ -25,7 +25,7 @@ export async function attachMatchaModalListeners() {
             else {
                 document.getElementById("matchaAuthModalMessage").style.color = "red";
                 document.getElementById("matchaAuthModalMessage").textContent = "Incorrect password. Please try again.";
-                console.log("Password incorrect for user:", userId);
+                // console.log("Password incorrect for user:", userId);
             }
         });
     }
