@@ -28,6 +28,6 @@ export default defineConfig({
   
   // Optimize dependencies
   optimizeDeps: {
-    include: []
+    include: ['@supabase/supabase-js']
   }
 });

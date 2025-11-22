@@ -1,10 +1,8 @@
 // Import Supabase client
-import supabaseClient from './config/supabaseClient.js';
-import { createClient } from '@supabase/supabase-js';
+import supabase from './config/supabaseClient.js';
 import { getTodayKey, formatDateForDisplay } from './utils/dateUtils.js';
 import { renderUserCheckinCards } from './ui/checkinForm.js';
 import { displayDashboard } from './ui/dashboard.js';
-import supabase from './config/supabaseClient.js';
 
 // Main application entry point
 document.addEventListener('DOMContentLoaded', async function() {
@@ -20,7 +18,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     await displayDashboard(supabase);
 
     // Render user check-in cards
-    await renderUserCheckinCards(supabase);
+    await renderUserCheckinCards();
 
 
     // displaying daily checkin for users
