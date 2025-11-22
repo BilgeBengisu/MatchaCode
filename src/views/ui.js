@@ -101,7 +101,7 @@ export class UIView {
             <div class="user-checkin-card" id="${user.id}CheckinCard">
                 <div class="user-checkin-header">
                     <div class="user-avatar ${user.id}">
-                        <img src="${user.profileImage || 'src/public/default_profile.png'}" alt="${user.name}" class="profile-image">
+                        <img src="${user.profileImage || '/default_profile.png'}" alt="${user.name}" class="profile-image" onerror="this.src='/default_profile.png'">
                     </div>
                     <div class="user-checkin-info">
                         <h4>${user.name}</h4>
@@ -351,7 +351,7 @@ export class UIView {
             const userList = Object.keys(data.users).map(userId => ({
                 id: userId,
                 name: data.users[userId].name || userId,
-                profileImage: data.users[userId].profileImage || `src/public/${userId}_profile.png`
+                profileImage: data.users[userId].profileImage || `/${userId}_profile.png`
             }));
             
             this.renderUserCards(userList);

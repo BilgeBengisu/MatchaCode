@@ -54,7 +54,7 @@ export async function renderUserCheckinCards() {
         let user_checkin_header = `
             <div class="user-checkin-header">
                 <div class="user-avatar">
-                    <img src="src/public/${user.user_id}_profile.png" class="profile-image" />
+                    <img src="/${user.user_id}_profile.png" class="profile-image" onerror="this.src='/default_profile.png'" />
                 </div>
                 <div class="user-checkin-info">
                     <h4>${user.username}</h4>
