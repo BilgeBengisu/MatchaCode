@@ -22,7 +22,7 @@ export async function renderUserCheckinCards() {
     }
 
     // 2. Render each user card
-    await Promise.all(users.map(async (user) => {
+    for (const user of users) {
         const { count, error } = await supabase
             .from('problems')
             .select('*', { count: 'exact', head: true })  // <-- head:true prevents returning all rows
@@ -77,7 +77,7 @@ export async function renderUserCheckinCards() {
         `;
         card.innerHTML = user_checkin_header + user_stats + user_checkin_actions;
         container.appendChild(card);
-    }));
+    }
 
     // 3. Bind event listeners for "Check In" buttons
     document.querySelectorAll(".checkin-btn").forEach(btn => {
