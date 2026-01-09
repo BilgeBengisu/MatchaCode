@@ -11,16 +11,14 @@ export async function handleCheckin(user_id) {
         const statusValue = document.getElementById("solved").value;
         console.log("Status value:", statusValue);
         // Map to schema: 'completed' -> 'completed', 'incomplete' -> 'attempted'
-        const status = statusValue === "completed" ? "completed" : "attempted";
-        const today = new Date().toISOString().split('T')[0]; // Get today's date in YYYY-MM-DD format
+        const status = statusValue === "completed" ? true : false;
 
         const { data, error } = await supabase.from('problems').insert([
             {
                 user_id,
                 topic: topic,
                 difficulty: level,
-                status, 
-                date: today
+                solved: status,
             }
         ])
         .select()
